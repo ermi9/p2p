@@ -52,3 +52,18 @@ name VARCHAR(100) NOT NULL,--eg. 'Home', 'Draw', 'Away', 'Over 2.5'
 created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 --EVENTS/MARKETS DOMAIN
+
+--OFFERS & ORDER BOOK DOMAIN
+CREATE TABLE offers(
+id SERIAL PRIMARY KEY,
+user_id INT NOT NULL REFERENCES users(id),
+outcome_id INT NOT NULL REFERENCES outcomes(id),
+odds NUMERIC(6,2) NOT NULL,
+initial_stake NUMERIC(6,2) NOT NULL,
+remaining_stake NUMERIC(6,2) NOT NULL,
+status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+created_at TIMESTAMP DEFAULT NOW(),
+updated_at TIMESTAMP DEFAULT NOW()
+    
+);
+--OFFERS & ORDER BOOK DOMAIN

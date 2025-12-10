@@ -67,3 +67,15 @@ updated_at TIMESTAMP DEFAULT NOW()
     
 );
 --OFFERS & ORDER BOOK DOMAIN
+
+--MATCHING DOMAIN
+CREATE TABLE matches(
+id SERIAL PRIMARY KEY,
+offer_id INT NOT NULL REFERENCES offers(id),
+maker_user_id INT NOT NULL REFERENCES users(id),
+taker_user_id INT NOT NULL REFERENCES users(id),
+matched_stake NUMERIC(6,2) NOT NULL,
+odds NUMERIC(6,2) NOT NULL,--value of the odds at the time of match
+created_at TIMESTAMP DEFAULT NOW()
+);
+--MATCHING DOMAIN

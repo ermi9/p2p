@@ -79,3 +79,21 @@ odds NUMERIC(6,2) NOT NULL,--value of the odds at the time of match
 created_at TIMESTAMP DEFAULT NOW()
 );
 --MATCHING DOMAIN
+
+--SETTLEMENT DOMAIN
+CREATE TABLE event_results(
+--here we keep track of which side won ('Home','Away',...)
+id SERIAL PRIMARY KEY,
+event_id INT NOT NULL UNIQUE REFERENCES events(id),
+winning_outcome_id INT NOT NULL REFERENCES outcomes(id),
+recorded_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE settlements(
+id SERIAL PRIMARY KEY,
+match_id INT NOT NULL REFERENCES matches(id),
+winner_user_id INT NOT NULL REFERENCES users(id),
+payout NUMERIC(6,2) NOT NULL,
+settled_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+--SETTLEMENT DOMAIN

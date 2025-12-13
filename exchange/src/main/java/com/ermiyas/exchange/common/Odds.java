@@ -1,25 +1,11 @@
-package com.ermiyas.exchange.domain.common;
+package com.ermiyas.exchange.domain.common.odds;
 import java.math.BigDecimal;
 
-public record Money(BigDecimal value){
-    //constructor
-    public Money{
-        if(value==null || value.compareTo(BigDecimal.ZERO)<0)
-            throw new IllegalArgumentException("Money must be >=0");
-
+public record Odds(BigDecimal value){
+    public Odds{
+        if(value==null || value.compareTo(BigDecimal.ONE)<=0) {
+            throw new IllegalArgumentException("Odds must be greater than 1");
+        }
     }
-    //deduction logic
-    public Money minus(Money other){
-        BigDecimal r=value.subtract(other.value);
-        if(r.compareTo(BigDecimal.ZERO)<0) throw new IllegalStateException("Negative Money");
-        return new Money(r);
-
-    }
-    //deposit logic
-public Money plus(Money other){
-    return new Money(value.add(other.value));
 }
-
-}
-
 

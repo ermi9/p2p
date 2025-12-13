@@ -1,4 +1,4 @@
-package com.exchange.domain.common;
+package com.ermiyas.exchange.domain.common;
 import java.math.BigDecimal;
 
 public records Odds(BigDecimal value){

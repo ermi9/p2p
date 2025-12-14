@@ -1,7 +1,7 @@
 package com.ermiyas.exchange.domain.offer;
 import com.ermiyas.exchange.domain.common.Money;
 import com.ermiyas.exchange.domain.common.Odds;
-
+import java.util.Objects;
 import java.time.Instant;
 
 public class offer{
@@ -52,6 +52,19 @@ public long outcomeId(){return outcomeId;}
 public Odds odds(){return odds;}
 public  Money remainingStake(){return remainingStake;}
 public Instant createdAt(){return createdAt;}
+
+
+@Override
+public boolean equals(Object o){
+    if(this==o) return true;
+    if(!(o instanceof offer)) return false;
+    Offer offer=(Offer) o;
+    return offerId==offer.offerId;
+}
+@Override
+public int hashcode(){
+    return Objects.hash(offerId);
+}
 
     
 }

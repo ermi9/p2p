@@ -1,4 +1,4 @@
-package com.ermiyas.exchange.domain.common;
+package com.ermiyas.exchange.common;
 import java.math.BigDecimal;
 
 public final class Odds{
@@ -12,6 +12,9 @@ public final class Odds{
     }
     public BigDecimal value(){
         return value;
+    }
+    public BigDecimal profitMultiplier(){
+        return value.subtract(BigDecimal.ONE);
     }
 
 }

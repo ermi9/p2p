@@ -4,7 +4,7 @@ import com.ermiyas.exchange.domain.common.Odds;
 import java.util.Objects;
 import java.time.Instant;
 
-public class offer{
+public class Offer{
     private final long  id;
     private final long  makerUserId;
     private final long  outcomeId;
@@ -13,7 +13,7 @@ public class offer{
     private Money remainingStake;
     private final Instant createdAt;
 
-    public offer(long id, long makerUserId,long outcomeId,Odds odds,Money stake)
+    public Offer(long id, long makerUserId,long outcomeId,Odds odds,Money stake)
 {
     if(stake.value().signum()<=0) throw new IllegalArgumentException("Stake must be greater than 0!");
     this.id=id;

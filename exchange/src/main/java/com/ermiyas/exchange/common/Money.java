@@ -1,4 +1,5 @@
-package com.ermiyas.exchange.domain.common;
+package com.ermiyas.exchange.common;
+// Package declaration corrected so the class can be resolved by existing imports.
 import java.math.BigDecimal;
 
 public final class Money{

@@ -1,6 +1,6 @@
 package com.ermiyas.exchange.domain.offer;
-import com.ermiyas.exchange.domain.common.Money;
-import com.ermiyas.exchange.domain.common.Odds;
+import com.ermiyas.exchange.common.Money;
+import com.ermiyas.exchange.common.Odds;
 import java.util.Objects;
 import java.time.Instant;
 
@@ -8,36 +8,41 @@ public class Offer{
     private final long  id;
     private final long  makerUserId;
     private final long  outcomeId;
+    private final Position position;
     private final Odds odds;
-    private final Money inititalStake;
+    private final Money initialStake;
     private Money remainingStake;
     private final Instant createdAt;
 
-    public Offer(long id, long makerUserId,long outcomeId,Odds odds,Money stake)
+    public Offer(long id, long makerUserId,long outcomeId,Position position,Odds odds,Money stake)
 {
     if(stake.value().signum()<=0) throw new IllegalArgumentException("Stake must be greater than 0!");
     this.id=id;
     this.makerUserId=makerUserId;
     this.outcomeId=outcomeId;
-    this.Odds= odds;
-    this.initialStake=initialStake;
-    this.remainingStake=remainingStake;
-    this.createdAt=createdAt;
+    this.position=position;
+    this.odds= odds;
+    this.initialStake=stake;
+    this.remainingStake=stake;
+    this.createdAt=Instant.now();
 
 
 }
 public void consume(Money amount){
-    if (amount.value.signum()<=0) 
+    if (amount.value().signum()<=0) 
         throw new IllegalArgumentException("Stake must be greater than 0!");
 
-    if(amount.value().compareTo(remainingStake.value()>0) 
+    if(amount.value().compareTo(remainingStake.value())>0) 
         throw new IllegalStateException("Not enough remaining stake!");
     
     remainingStake=remainingStake.minus(amount);
 }
 public OfferStatus status(){
-    if(isFilled()) return OfferStatus.FILLED;
-    if (remainingStake.value().compareTo(initialStake.value())<0;) return OfferStatus.PARTIALLY_FILLED;
+    if(isFilled()) 
+        return OfferStatus.FILLED;
+    if (remainingStake.value().compareTo(initialStake.value())<0) 
+        return OfferStatus.PARTIALLY_FILLED;
+return OfferStatus.OPEN;
 }
 
 public boolean isFilled(){
@@ -46,24 +51,30 @@ public boolean isFilled(){
     return remainingStake.value().signum()==0;
 }
 public long id(){return id;}
+
 public long makerUserId(){return makerUserId;}
 
+public Position position(){return position;}
+
 public long outcomeId(){return outcomeId;}
+
 public Odds odds(){return odds;}
+
 public  Money remainingStake(){return remainingStake;}
+
 public Instant createdAt(){return createdAt;}
 
 
 @Override
 public boolean equals(Object o){
     if(this==o) return true;
-    if(!(o instanceof offer)) return false;
+    if(!(o instanceof Offer)) return false;
     Offer offer=(Offer) o;
-    return offerId==offer.offerId;
+    return id==offer.id;
 }
 @Override
-public int hashcode(){
-    return Objects.hash(offerId);
+public int hashCode(){
+    return Objects.hash(id);
 }
 
     

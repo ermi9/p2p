@@ -31,3 +31,25 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Maven build output
+target/
+
+# IDE files
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+*.log
+
+# Maven build output
+target/
+
+# IDE files
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+*.log

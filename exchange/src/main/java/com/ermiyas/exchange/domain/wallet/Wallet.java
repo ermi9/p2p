@@ -54,7 +54,22 @@ public final class Wallet {
     }
 
 
-    public Money totalbalance(){
+public void debitForBet(Money amount, String reference) {
+    // In your new model, this should actually deduct from total balance 
+    // after the money has been released from reserved.
+    requirePositive(amount);
+    totalBalance = totalBalance.minus(amount);
+    transactions.add(WalletTransaction.of(userId, WalletTransactionType.BET_DEBIT, amount, reference));
+}
+
+public void creditForBet(Money amount, String reference) {
+    requirePositive(amount);
+    totalBalance = totalBalance.plus(amount);
+    transactions.add(WalletTransaction.of(userId, WalletTransactionType.BET_CREDIT, amount, reference));
+}
+
+
+    public Money totalBalance(){
         return totalBalance;
     }
     public List<WalletTransaction> transactions(){

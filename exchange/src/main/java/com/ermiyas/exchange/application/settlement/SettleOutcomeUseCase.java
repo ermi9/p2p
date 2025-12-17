@@ -1,20 +1,16 @@
 package com.ermiyas.exchange.application.settlement;
 
 import com.ermiyas.exchange.application.ports.BetAgreementRepository;
-import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.domain.orderbook.BetAgreement;
 import com.ermiyas.exchange.domain.settlement.ActualOutcome;
-import com.ermiyas.exchange.domain.settlement.SettledBet;
-import com.ermiyas.exchange.domain.settlement.SettledBetFactory;
-import com.ermiyas.exchange.domain.settlement.SettlementResult;
+
 import com.ermiyas.exchange.domain.wallet.WalletService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Settlement now actually moves funds using the wallet service.
+ * Settlement now actually performs real wallet operations (release + credit).
  */
 public class SettleOutcomeUseCase {
     private final BetAgreementRepository betAgreementRepository;
@@ -27,7 +23,9 @@ public class SettleOutcomeUseCase {
     }
 
     public void execute(long outcomeId,ActualOutcome outcome){
+
         List<BetAgreement> agreements=betAgreementRepository.findByOutcomeId(outcomeId);
+
         for(BetAgreement agreement: agreements){
             long winnerUserId=agreement.winnerUserId(outcome);
             long loserUserId=agreement.loserUserId(outcome);
@@ -37,8 +35,12 @@ public class SettleOutcomeUseCase {
             walletService.release(agreement.makerUserId(),agreement.makerRisk());
             walletService.release(agreement.takerUserId(),agreement.takerRisk());
 
-            walletService.credit(winnerUserId, agreement.totalPayout(), "Bet Settlement for outcome: "+outcomeId);
-        
+walletService.withdraw(loserUserId, 
+                                  winnerUserId == agreement.makerUserId() ? agreement.takerRisk() : agreement.makerRisk(), 
+                                  "Bet Lost for outcome: " + outcomeId);
+        walletService.credit(winnerUserId, 
+                                 winnerUserId == agreement.makerUserId() ? agreement.takerRisk() : agreement.makerRisk(), 
+                                 "Bet Won for outcome: " + outcomeId);
         agreement.markSettled();
         betAgreementRepository.save(agreement);
         }

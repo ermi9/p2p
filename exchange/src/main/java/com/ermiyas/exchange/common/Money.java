@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.util.Objects;
 public final class Money{
     private final BigDecimal value;
+    public static Money zero(){
+        return new Money(BigDecimal.ZERO);
+    }
 
     public Money(BigDecimal value){
         this.value=Objects.requireNonNull(value,"value");

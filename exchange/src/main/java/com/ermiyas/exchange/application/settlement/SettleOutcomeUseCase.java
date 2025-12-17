@@ -11,6 +11,7 @@ import com.ermiyas.exchange.domain.wallet.WalletService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Settlement now actually moves funds using the wallet service.
@@ -21,33 +22,27 @@ public class SettleOutcomeUseCase {
 
     public SettleOutcomeUseCase(BetAgreementRepository betAgreementRepository,
                                 WalletService walletService) {
-        this.betAgreementRepository = betAgreementRepository;
-        this.walletService = walletService;
+        this.betAgreementRepository = Objects.requireNonNull(betAgreementRepository);
+        this.walletService = Objects.requireNonNull(walletService);
     }
 
-    public SettlementResult execute(long outcomeId, ActualOutcome outcome) {
-        List<BetAgreement> agreements = betAgreementRepository.findByOutcomeId(outcomeId);
-        List<Long> credited = new ArrayList<>();
-        List<Long> debited = new ArrayList<>();
+    public void execute(long outcomeId,ActualOutcome outcome){
+        List<BetAgreement> agreements=betAgreementRepository.findByOutcomeId(outcomeId);
+        for(BetAgreement agreement: agreements){
+            long winnerUserId=agreement.winnerUserId(outcome);
+            long loserUserId=agreement.loserUserId(outcome);
 
-        for (BetAgreement agreement : agreements) {
-            SettledBet settledBet = SettledBetFactory.from(agreement);
-            Money payout = settledBet.payout();
-            String reference = "Settlement for offer " + agreement.offerId();
+            //release both reservations
 
-            if (settledBet.isWinning(outcome)) {
-                walletService.creditForBet(settledBet.makerUserId(), payout, reference);
-                walletService.debitForBet(agreement.takerUserId(), payout, reference);
-                credited.add(settledBet.makerUserId());
-                debited.add(agreement.takerUserId());
-            } else {
-                walletService.creditForBet(agreement.takerUserId(), payout, reference);
-                walletService.debitForBet(settledBet.makerUserId(), payout, reference);
-                credited.add(agreement.takerUserId());
-                debited.add(settledBet.makerUserId());
-            }
+            walletService.release(agreement.makerUserId(),agreement.makerRisk());
+            walletService.release(agreement.takerUserId(),agreement.takerRisk());
+
+            walletService.credit(winnerUserId, agreement.totalPayout(), "Bet Settlement for outcome: "+outcomeId);
+        
+        agreement.markSettled();
+        betAgreementRepository.save(agreement);
         }
-
-        return new SettlementResult(outcomeId, credited, debited);
     }
+
+    
 }

@@ -9,61 +9,77 @@ wallet enforces balance >= 0. Added stricter validation & correct transaction ty
 */
 public final class Wallet {
     private final long userId;
-    private Money balance;
+    
+    private Money totalBalance;
+    
+    private Money reservedBalance;
+    
     private final List<WalletTransaction> transactions;
+
+
     public Wallet(long userId,Money startingBalance){
         this.userId=userId;
-        this.balance=Objects.requireNonNull(startingBalance,"startingaBalance");
+        this.totalBalance=Objects.requireNonNull(startingBalance.value(),"startingaBalance");
         this.transactions=new ArrayList<>();
     }
+    
     public long userId(){
         return userId;
     }
-    public Money balance(){
-        return balance;
+    
+    public Money availableBalance(){
+        return totalBalance.minus(reservedBalance);
+
+    }
+    //reserved and available balance logic added
+    public void reserve(Money amount){
+        if(amount==null || amount.value().signum()<=0){
+            throw new IllegalArgumentException("Amount to reserve must be positive");
+        }
+        if(amount.value().compareTo(availableBalance().value())>0){
+            throw new InsufficientFundsException("Amount exceeds availabale balance");
+        }
+        reservedBalance=reservedBalance.plus(amount);
+    }
+
+    //release the reserved amount
+    public void release(Money amount){
+        if(amount==null || amount.value().signum()<=0){
+            throw new IllegalArgumentException("Amount to release must be positive ");
+
+        }
+        if(amount.value().compareTo(reservedBalance.value())>0)
+            throw new IllegalStateException("Cannot release more than reserved balance");
+    
+        reservedBalance=reservedBalance.minus(amount);
+    
+    }
+
+
+    public Money totalbalance(){
+        return totalbalance;
     }
     public List<WalletTransaction> transactions(){
         return Collections.unmodifiableList(transactions);
     }
+    //deposit and withdraw logic
     public WalletTransaction deposit(Money amount,String reference){
         requirePositive(amount);
-        balance=balance.plus(amount);
+        totalBalance=totalBalance.plus(amount);
         WalletTransaction tx=WalletTransaction.of(userId,WalletTransactionType.DEPOSIT,amount,reference);
         transactions.add(tx);
         return tx;
     }
     public WalletTransaction withdraw(Money amount, String reference){
         requirePositive(amount);
-        ensureSufficientFunds(amount);
-        balance=balance.minus(amount);
+        totalBalance=totalBalance.minus(amount);
         WalletTransaction tx=WalletTransaction.of(userId,WalletTransactionType.WITHDRAWAL,amount,reference);
         transactions.add(tx);
         return tx;
 
     }
 
-    public WalletTransaction debitForBet(Money amount, String reference){
-        requirePositive(amount);
-        ensureSufficientFunds(amount);
-        balance=balance.minus(amount);
-        WalletTransaction tx=WalletTransaction.of(userId,WalletTransactionType.BET_DEBIT,amount,reference);
-        transactions.add(tx);
-        return tx;
-
-    }
-    public WalletTransaction creditForBet(Money amount, String reference){
-        requirePositive(amount);
-        balance=balance.plus(amount);
-        WalletTransaction tx=WalletTransaction.of(userId,WalletTransactionType.BET_CREDIT,amount,reference);
-        transactions.add(tx);
-        return tx;
-    }
-    private void ensureSufficientFunds(Money amount){
-        //compare values
-        if(balance.value().compareTo(amount.value())<0)
-            throw new InsufficientFundsException(balance, amount);
-
-    }
+    
     private void requirePositive(Money amount){
         Objects.requireNonNull(amount, "amount");
         if(amount.value().signum()<=0)

@@ -13,64 +13,33 @@ import com.ermiyas.exchange.infrastructure.persistence.inmemory.InMemoryBetAgree
 import com.ermiyas.exchange.infrastructure.persistence.inmemory.InMemoryOfferRepository;
 import com.ermiyas.exchange.infrastructure.persistence.inmemory.InMemoryOrderBookRepository;
 import com.ermiyas.exchange.infrastructure.persistence.inmemory.InMemoryWalletRepository;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.math.BigDecimal;
 
-@SpringBootApplication // Added so SpringBootTest can locate the application configuration.
+@SpringBootApplication
 public class ExchangeApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ExchangeApplication.class, args);
-        runDemoScenario();
-    }
-
-    private static void runDemoScenario() {
-        // -----------------------------
-        // 1. Repositories (in-memory)
-        // -----------------------------
-        InMemoryOfferRepository offerRepository =
-                new InMemoryOfferRepository();
-
-        InMemoryOrderBookRepository orderBookRepository =
-                new InMemoryOrderBookRepository();
-
-        InMemoryBetAgreementRepository betAgreementRepository =
-                new InMemoryBetAgreementRepository();
-
-        InMemoryWalletRepository walletRepository =
-                new InMemoryWalletRepository();
 
         // -----------------------------
-        // 2. Wallets + initial funds
+        // Infrastructure (in-memory)
         // -----------------------------
-        Wallet user1Wallet = new Wallet(
-                1L,
-                new Money(new BigDecimal("100.00"))
-        );
-
-        Wallet user2Wallet = new Wallet(
-                2L,
-                new Money(new BigDecimal("100.00"))
-        );
-
-        walletRepository.save(user1Wallet);
-        walletRepository.save(user2Wallet);
-
-        System.out.println("Initial balances:");
-        System.out.println("User 1: " + user1Wallet.balance().value());
-        System.out.println("User 2: " + user2Wallet.balance().value());
-        System.out.println();
+        InMemoryOfferRepository offerRepository = new InMemoryOfferRepository();
+        InMemoryOrderBookRepository orderBookRepository = new InMemoryOrderBookRepository();
+        InMemoryBetAgreementRepository betAgreementRepository = new InMemoryBetAgreementRepository();
+        InMemoryWalletRepository walletRepository = new InMemoryWalletRepository();
 
         // -----------------------------
-        // 3. Use cases
+        // Domain services
+        // -----------------------------
+        WalletService walletService = new WalletService(walletRepository);
+
+        // -----------------------------
+        // Application use cases
         // -----------------------------
         CreateOfferUseCase createOffer =
-                new CreateOfferUseCase(
-                        offerRepository,
-                        orderBookRepository
-                );
+                new CreateOfferUseCase(offerRepository, orderBookRepository);
 
         TakeOfferUseCase takeOffer =
                 new TakeOfferUseCase(
@@ -79,9 +48,6 @@ public class ExchangeApplication {
                         betAgreementRepository
                 );
 
-        WalletService walletService =
-                new WalletService(walletRepository);
-
         SettleOutcomeUseCase settleOutcome =
                 new SettleOutcomeUseCase(
                         betAgreementRepository,
@@ -89,47 +55,52 @@ public class ExchangeApplication {
                 );
 
         // -----------------------------
-        // 4. User 1 creates an offer
+        // Setup wallets
         // -----------------------------
-        long outcomeId = 10L;
+        walletRepository.save(
+                new Wallet(1L, new Money(new BigDecimal("100.00")))
+        );
+        walletRepository.save(
+                new Wallet(2L, new Money(new BigDecimal("100.00")))
+        );
 
+        System.out.println("Initial balances:");
+        printBalances(walletRepository);
+
+        // -----------------------------
+        // Scenario
+        // -----------------------------
+        long outcomeId = 1L;
+
+        // User 1 creates FOR offer
         createOffer.execute(
-                100L,                   // offerId
-                1L,                     // makerUserId
+                1L,                     // offerId
+                1L,                     // maker
                 outcomeId,
                 Position.FOR,
                 new Odds(new BigDecimal("2.00")),
                 new Money(new BigDecimal("50.00"))
         );
 
-        System.out.println("Offer created by User 1 (FOR, stake 50 @ odds 2.0)");
-        System.out.println();
-
-        // -----------------------------
-        // 5. User 2 takes part of offer
-        // -----------------------------
+        // User 2 takes full offer
         takeOffer.execute(
                 outcomeId,
-                100L,                   // offerId
-                2L,                     // takerUserId
+                1L,
+                2L,
                 new Money(new BigDecimal("50.00"))
         );
 
-        System.out.println("User 2 took the offer (stake 50)");
-        System.out.println();
-
-        // -----------------------------
-        // 6. Settle outcome
-        // -----------------------------
+        // Outcome happens
         settleOutcome.execute(
                 outcomeId,
                 ActualOutcome.OUTCOME_HAPPENED
         );
 
-        // -----------------------------
-        // 7. Final balances
-        // -----------------------------
-        System.out.println("Final balances after settlement:");
+        System.out.println("\nFinal balances:");
+        printBalances(walletRepository);
+    }
+
+    private static void printBalances(InMemoryWalletRepository walletRepository) {
         System.out.println("User 1: " +
                 walletRepository.findByUserId(1L).balance().value());
         System.out.println("User 2: " +

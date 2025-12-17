@@ -19,6 +19,7 @@ public final class BetAgreement{
     
     private final Money makerRisk;
     private final Money takerRisk;
+
 public BetAgreement(long offerId,long makerUserId,long takerUserId,long outcomeId,Position makerPosition,Odds odds, Money stake){
     this.offerId=offerId;
     this.makerUserId=makerUserId;
@@ -33,13 +34,18 @@ public BetAgreement(long offerId,long makerUserId,long takerUserId,long outcomeI
         this.takerRisk=stake.multiply(odds.minusOne());
     }
     else{
-        this.makerRisk=stake.multiply(odds.minusOne);
+        this.makerRisk=stake.multiply(odds.minusOne());
         this.takerRisk=stake;
     }
 }
+
 public long winnerUserId(boolean outcomeHappened){
     boolean makerWins=(makerPosition==Position.FOR &&outcomeHappened) || (makerPosition == Position.AGAINST &&!outcomeHappened);
     return makerWins ? makerUserId : takerUserId;
+}
+
+public long loserUserId(boolean outcomeHappened){
+    return winnerUserId(outcomeHappened)==makerUserId ? takerUserId : makerUserId;
 }
 
 
@@ -69,8 +75,11 @@ public Money stake(){
 public Money makerRisk(){
     return makerRisk;
 }
-public takerRisk(){
+public Money takerRisk(){
     return takerRisk;
+}
+public Money totalPayout(){
+    return makerRisk.plus(takerRisk);
 }
 
 }

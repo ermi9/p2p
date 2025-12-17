@@ -3,73 +3,61 @@ package com.ermiyas.exchange.domain.orderbook;
 import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.domain.offer.Offer;
 import com.ermiyas.exchange.domain.offer.OfferStatus;
-
+import com.ermiyas.exchange.domain.offer.Position; // Use our domain Position
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
-/**
- * Wired up the previously empty order book so matching/settlement can work.
- */
-public class OrderBook{
+public class OrderBook {
     private final long outcomeId;
     private final List<Offer> offers;
 
-    public OrderBook(long outcomeId){
-        this.outcomeId=outcomeId;
-        this.offers=new ArrayList<>();
+    public OrderBook(long outcomeId) {
+        this.outcomeId = outcomeId;
+        this.offers = new ArrayList<>();
     }
 
-    public void addOffer(Offer offer){
-        if(offer.outcomeId()!=outcomeId){
+    public void addOffer(Offer offer) {
+        if (offer.outcomeId() != outcomeId) {
             throw new WrongOutcomeException();
         }
         offers.add(offer);
     }
 
-    public BetAgreement matchOffer(Offer offer,long takerUserId,Money amount){
-        if(offer.outcomeId()!=outcomeId){
+    public BetAgreement matchOffer(Offer offer, long takerUserId, Money amount) {
+        // Basic validation
+        if (offer.outcomeId() != outcomeId) {
             throw new WrongOutcomeException();
         }
-        if(amount==null || amount.value().signum()<=0){
+        if (amount == null || amount.value().signum() <= 0) {
             throw new InvalidMatchAmountException();
-        }
-        if(offer.remainingStake().value().compareTo(amount.value())<0){
-            throw new InvalidMatchAmountException();
-        }
-        if(offer.status()==OfferStatus.FILLED){
-            throw new OfferNotOpenException();
         }
 
+        // 1. Update the offer stake
         offer.consume(amount);
-        removeFilledOffers();
+        
+        // 2. Simple removal: Remove the offer from the list if it is fully matched (filled)
+        if (offer.isFilled()) {
+            offers.remove(offer);
+        }
 
+        // 3. Create the agreement (FIXED: Added offer.id() as the first argument)
         return new BetAgreement(
-                offer.id(),
-                offer.makerUserId(),
-                takerUserId,
-                outcomeId,
-                offer.position(),
-                offer.odds(),
-                amount
-        );
+    offer.id(),
+    offer.makerUserId(), // Changed from userId() to makerUserId()
+    takerUserId,
+    this.outcomeId,
+    offer.position(),
+    offer.odds(),
+    amount
+);
     }
 
-    public List<Offer> getOpenOffers(){
+    public List<Offer> getOpenOffers() {
         return Collections.unmodifiableList(offers);
     }
 
-    public long outcomeId(){
+    public long outcomeId() {
         return outcomeId;
-    }
-
-    private void removeFilledOffers(){
-        Iterator<Offer> iterator=offers.iterator();
-        while(iterator.hasNext()){
-            if(iterator.next().isFilled()){
-                iterator.remove();
-            }
-        }
     }
 }

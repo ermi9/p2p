@@ -3,8 +3,7 @@ import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.common.Odds;
 import java.util.Objects;
 
-import javax.swing.text.Position;
-
+import com.ermiyas.exchange.domain.offer.Position;
 import java.time.Instant;
 
 public class Offer{

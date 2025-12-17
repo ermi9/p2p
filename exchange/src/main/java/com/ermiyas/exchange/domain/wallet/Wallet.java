@@ -19,8 +19,9 @@ public final class Wallet {
 
     public Wallet(long userId,Money startingBalance){
         this.userId=userId;
-        this.totalBalance=Objects.requireNonNull(startingBalance.value(),"startingaBalance");
+        this.totalBalance=Objects.requireNonNull(startingBalance,"startingaBalance");
         this.transactions=new ArrayList<>();
+        this.reservedBalance=Money.zero();
     }
     
     public long userId(){
@@ -33,22 +34,19 @@ public final class Wallet {
     }
     //reserved and available balance logic added
     public void reserve(Money amount){
-        if(amount==null || amount.value().signum()<=0){
-            throw new IllegalArgumentException("Amount to reserve must be positive");
-        }
-        if(amount.value().compareTo(availableBalance().value())>0){
-            throw new InsufficientFundsException("Amount exceeds availabale balance");
+        requirePositive(amount);
+
+        if(amount.compareTo(availableBalance())>0){
+            throw new InsufficientFundsException(availableBalance(),amount);
         }
         reservedBalance=reservedBalance.plus(amount);
     }
 
     //release the reserved amount
     public void release(Money amount){
-        if(amount==null || amount.value().signum()<=0){
-            throw new IllegalArgumentException("Amount to release must be positive ");
+        requirePositive(amount);
 
-        }
-        if(amount.value().compareTo(reservedBalance.value())>0)
+        if(amount.compareTo(reservedBalance)>0)
             throw new IllegalStateException("Cannot release more than reserved balance");
     
         reservedBalance=reservedBalance.minus(amount);
@@ -57,7 +55,7 @@ public final class Wallet {
 
 
     public Money totalbalance(){
-        return totalbalance;
+        return totalBalance;
     }
     public List<WalletTransaction> transactions(){
         return Collections.unmodifiableList(transactions);

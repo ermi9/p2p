@@ -1,4 +1,5 @@
-🧩 P2P Sports Betting Exchange (Student Project)
+
+#🧩 P2P Sports Betting Exchange (Student Project)#
 Overview
 
 This repository contains a peer-to-peer (P2P) sports betting exchange built as a learning-focused student project, with a strong emphasis on core business logic, correctness, and architecture.

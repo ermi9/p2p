@@ -62,7 +62,7 @@ The project follows a domain-first, clean architecture style:
 └──────────────────────────┘
 
 ```
-* Key Rules: *
+Key Rules:*
 
 * Domain knows nothing about Spring, HTTP, or databases.
 

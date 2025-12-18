@@ -65,25 +65,39 @@ This makes the system:
 
 ---
 
-## 🧠 High-level Architecture
+### Key rules
 
-### Layered structure
-+---------------------------+
-| Infrastructure |
-| (in-memory now, DB later) |
-+-------------^-------------+
-|
-| implements
-|
-+-------------+-------------+
-| Application |
-| (use cases + ports) |
-+-------------^-------------+
-|
-| uses
-|
-+-------------+-------------+
-| Domain |
-| (pure business logic) |
-+---------------------------+
+- **Domain** knows nothing about Spring, HTTP, or databases  
+- **Application** orchestrates workflows but does not contain business rules  
+- **Infrastructure** is an adapter, not the core  
 
+---
+
+## 📂 Project Structure (How to Navigate)
+
+src/main/java/com/ermiyas/exchange
+│
+├── common/ # Shared value objects
+│ ├── Money.java # Immutable, non-negative money
+│ └── Odds.java # Decimal odds (> 1.0)
+│
+├── domain/
+│ ├── orderbook/ # Betting primitives
+│ │ ├── Offer.java
+│ │ └── BetAgreement.java
+│ │
+│ ├── wallet/ # Accounting & reservations
+│ │ ├── Wallet.java
+│ │ ├── WalletTransaction.java
+│ │ └── InsufficientFundsException.java
+│ │
+│ └── settlement/ # Outcome modeling (WIP / evolving)
+│
+├── application/
+│ ├── offer/ # Create / take offer use cases
+│ └── settlement/ # Outcome settlement use case
+│
+├── infrastructure/
+│ └── repository/ # In-memory implementations (temporary)
+│
+└── ExchangeApplication.java # Entry point (Spring Boot later)

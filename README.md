@@ -60,3 +60,12 @@ The project follows a domain-first, clean architecture style:
 │          Domain           │
 │  (pure business logic)    │
 └──────────────────────────┘
+
+```
+###Key Rules:
+
+* Domain knows nothing about Spring, HTTP, or databases.
+
+* Application orchestrates workflows but does not contain business rules.
+
+* Infrastructure is an adapter, not the core.

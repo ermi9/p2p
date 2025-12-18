@@ -55,9 +55,15 @@ public final class Wallet {
 
 
 public void debitForBet(Money amount, String reference) {
-    // In your new model, this should actually deduct from total balance 
-    // after the money has been released from reserved.
+    // In our new model, this should actually deduct from total balance --recheck in main
+    // after the money has been released from reserved.--recheck in main
     requirePositive(amount);
+    this.release(amount);
+    /*
+    WHY I ADDED "this.release(amount);"
+    Release the "lock" first so the money can be deducted this moves 'amount' from Reserved back to Available
+    To avoid the scenario when the total goes down and the reserved satys the same
+    */
     totalBalance = totalBalance.minus(amount);
     transactions.add(WalletTransaction.of(userId, WalletTransactionType.BET_DEBIT, amount, reference));
 }

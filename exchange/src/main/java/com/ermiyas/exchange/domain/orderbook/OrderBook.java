@@ -36,15 +36,15 @@ public class OrderBook {
         // 1. Update the offer stake
         offer.consume(amount);
         
-        // 2. Simple removal: Remove the offer from the list if it is fully matched (filled)
+        // 2. Simple removal: Remove the offer from the list if it is fully matched (filled)--recheck later on Main
         if (offer.isFilled()) {
             offers.remove(offer);
         }
 
-        // 3. Create the agreement (FIXED: Added offer.id() as the first argument)
+        // 3. Create the agreement (FIXED: Added offer.id() as the first argument)--recheck later on Main
         return new BetAgreement(
     offer.id(),
-    offer.makerUserId(), // Changed from userId() to makerUserId()
+    offer.makerUserId(), // Changed from userId() to makerUserId()--recheck later on Main
     takerUserId,
     this.outcomeId,
     offer.position(),

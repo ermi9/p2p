@@ -2,8 +2,9 @@ package com.ermiyas.exchange.domain.offer;
 import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.common.Odds;
 import java.util.Objects;
+import com.ermiyas.exchange.domain.offer.Offer;
+import com.ermiyas.exchange.domain.wallet.InsufficientFundsException;
 
-import com.ermiyas.exchange.domain.offer.Position;
 import java.time.Instant;
 
 public class Offer{
@@ -33,11 +34,11 @@ public class Offer{
 
 
 public void consume(Money amount){
-    if (amount==null || amount.value().signum()<=0) 
-        throw new IllegalArgumentException("Stake must be greater than 0!");
+    if (amount.compareTo(Money.zero())<=0) 
+        throw new IllegalArgumentException("Amount to consume must be positive");
 
-    if(amount.value().compareTo(remainingStake.value())>0) 
-        throw new IllegalStateException("Not enough remaining stake!");
+    if(amount.compareTo(remainingStake)>0) 
+        throw new InsufficientFundsException(remainingStake, amount);//reused the custom Exception I created
     
     remainingStake=remainingStake.minus(amount);
 }
@@ -46,7 +47,7 @@ public OfferStatus status(){
     if(isFilled()) 
         return OfferStatus.FILLED;
     //if the remainingStake !=0 AND less than initialStake--> PARTIALLY_FILLED
-    if (remainingStake.value().compareTo(initialStake.value())<0) 
+    if (remainingStake.compareTo(initialStake) < 0) 
         return OfferStatus.PARTIALLY_FILLED;
 return OfferStatus.OPEN;
 }
@@ -54,8 +55,8 @@ return OfferStatus.OPEN;
 
 public boolean isFilled(){
     //only true if remainingStake==0 otherwise false 
+    return remainingStake.compareTo(Money.zero())==0;
 
-    return remainingStake.value().signum()==0;
 }
 
 

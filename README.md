@@ -69,3 +69,32 @@ The project follows a domain-first, clean architecture style:
 * Application orchestrates workflows but does not contain business rules.
 
 * Infrastructure is an adapter, not the core.
+
+```text
+  
+src/main/java/com/ermiyas/exchange
+│
+├── common/                 # Shared value objects
+│   ├── Money.java          # Immutable, non-negative money
+│   └── Odds.java           # Decimal odds (> 1.0)
+│
+├── domain/
+│   ├── orderbook/          # Betting primitives
+│   │   ├── Offer.java
+│   │   └── BetAgreement.java
+│   │
+│   ├── wallet/             # Accounting & reservations
+│   │   ├── Wallet.java
+│   │   ├── WalletTransaction.java
+│   │   └── InsufficientFundsException.java
+│   │
+│   └── settlement/         # Outcome modeling (WIP / evolving)
+│
+├── application/
+│   ├── offer/              # Create / take offer use cases
+│   └── settlement/         # Outcome settlement use case
+│
+├── infrastructure/
+│   └── repository/         # In-memory implementations (temporary)
+│
+└── ExchangeApplication.java # Entry point (Spring Boot later)

@@ -55,7 +55,7 @@ public final class Wallet {
 
 
 public void debitForBet(Money amount, String reference) {
-    // In your new model, this should actually deduct from total balance 
+    // In our new model, this should actually deduct from total balance --this was changed after I decided to move on to reservation based MOdel
     // after the money has been released from reserved.
     requirePositive(amount);
     totalBalance = totalBalance.minus(amount);

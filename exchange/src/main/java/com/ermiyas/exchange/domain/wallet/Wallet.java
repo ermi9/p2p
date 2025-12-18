@@ -55,8 +55,10 @@ public final class Wallet {
 
 
 public void debitForBet(Money amount, String reference) {
+
     // In our new model, this should actually deduct from total balance --recheck in main
     // after the money has been released from reserved.--recheck in main
+
     requirePositive(amount);
     this.release(amount);
     /*

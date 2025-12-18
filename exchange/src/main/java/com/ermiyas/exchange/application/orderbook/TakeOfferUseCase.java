@@ -44,7 +44,6 @@ public class TakeOfferUseCase {
 
         // 4. RESERVE PHASE: Use the risk logic already inside BetAgreement
         // This ensures enough money is locked for the final settlement
-        walletService.reserve(agreement.makerUserId(), agreement.makerRisk());
         walletService.reserve(agreement.takerUserId(), agreement.takerRisk());
 
         // 5. Persist the changes

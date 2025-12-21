@@ -1,6 +1,7 @@
 package com.ermiyas.exchange.domain.wallet;
-
-import com.ermiyas.exchange.application.ports.WalletRepository; import com.ermiyas.exchange.common.Money; import java.util.Objects;
+import com.ermiyas.exchange.common.Money;
+import com.ermiyas.exchange.application.ports.WalletRepository; 
+ import java.util.Objects;
 
 public final class WalletService { private final WalletRepository walletRepository;
 
@@ -30,15 +31,20 @@ public void credit(long userId, Money amount, String reference) {
     walletRepository.save(wallet);
 }
 
-public void withdraw(long userId, Money amount, String reference) {
+
+public void debit(long userId, Money amount, String reference) {
     Wallet wallet = walletRepository.findByUserId(userId);
     wallet.withdraw(amount, reference);
     walletRepository.save(wallet);
 }
-
-public void deposit(long userId, Money amount, String reference) {
-    Wallet wallet = walletRepository.findByUserId(userId);
-    wallet.deposit(amount, reference);
+public void creditForBet(long userId,Money netProfit,Money ownRisk,String reference){
+    Wallet wallet= walletRepository.findByUserId(userId);
+    wallet.creditForBet(netProfit,ownRisk, reference);
+    walletRepository.save(wallet);
+}
+public void debitForBet(long userId,Money amount,String reference){
+    Wallet wallet=walletRepository.findByUserId(userId);
+    wallet.debitForBet(amount, reference);
     walletRepository.save(wallet);
 }
 

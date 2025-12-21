@@ -2,6 +2,9 @@ package com.ermiyas.exchange.common;
 // Package declaration corrected so the class can be resolved by existing imports.
 import java.math.BigDecimal;
 import java.util.Objects;
+
+
+import com.ermiyas.exchange.domain.wallet.InsufficientFundsException;
 public final class Money{
     private final BigDecimal value;
     public static Money zero(){
@@ -22,7 +25,7 @@ public final class Money{
         Objects.requireNonNull(other);
         BigDecimal result=this.value.subtract(other.value);
         if(result.signum()<0)
-            throw new IllegalArgumentException("Resulting Money cannot be Negative");
+            throw new InsufficientFundsException(this,other);
         return new Money(result);
     }
 
@@ -41,5 +44,17 @@ public final class Money{
     public int compareTo(Money other){
         Objects.requireNonNull(other);
         return this.value.compareTo(other.value);
+    }
+    public static Money of(String value){
+        return new Money(new java.math.BigDecimal(value));
+    }
+    @Override
+    public boolean equals(Object o){
+        if(this==o)
+            return true;
+        if(!(o instanceof Money))
+            return false;
+        Money money=(Money) o;
+        return this.value.compareTo(money.value)==0;
     }
 }

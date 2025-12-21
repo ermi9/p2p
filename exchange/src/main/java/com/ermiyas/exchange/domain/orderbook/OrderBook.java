@@ -2,8 +2,6 @@ package com.ermiyas.exchange.domain.orderbook;
 
 import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.domain.offer.Offer;
-import com.ermiyas.exchange.domain.offer.OfferStatus;
-import com.ermiyas.exchange.domain.offer.Position; // Use our domain Position
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +45,6 @@ public class OrderBook {
     offer.makerUserId(), // Changed from userId() to makerUserId()--recheck later on Main
     takerUserId,
     this.outcomeId,
-    offer.position(),
     offer.odds(),
     amount
 );

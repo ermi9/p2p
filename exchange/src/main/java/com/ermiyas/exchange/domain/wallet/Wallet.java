@@ -55,8 +55,10 @@ public final class Wallet {
 
 
 public void debitForBet(Money amount, String reference) {
+
     // In our new model, this should actually deduct from total balance --recheck in main
     // after the money has been released from reserved.--recheck in main
+
     requirePositive(amount);
     this.release(amount);
     /*
@@ -65,13 +67,13 @@ public void debitForBet(Money amount, String reference) {
     To avoid the scenario when the total goes down and the reserved satys the same
     */
     totalBalance = totalBalance.minus(amount);
-    transactions.add(WalletTransaction.of(userId, WalletTransactionType.BET_DEBIT, amount, reference));
+    transactions.add(WalletTransaction.of(this.userId, WalletTransactionType.BET_DEBIT, amount, reference));
 }
 
-public void creditForBet(Money amount, String reference) {
-    requirePositive(amount);
-    totalBalance = totalBalance.plus(amount);
-    transactions.add(WalletTransaction.of(userId, WalletTransactionType.BET_CREDIT, amount, reference));
+public void creditForBet(Money netProfit,Money ownRisk ,String reference) {
+    this.release(ownRisk); 
+    totalBalance = totalBalance.plus(netProfit);
+    transactions.add(WalletTransaction.of(userId, WalletTransactionType.BET_CREDIT, netProfit, reference));
 }
 
 

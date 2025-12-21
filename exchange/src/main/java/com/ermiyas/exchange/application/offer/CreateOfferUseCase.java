@@ -1,27 +1,33 @@
 package com.ermiyas.exchange.application.offer;
 
 import com.ermiyas.exchange.application.ports.OfferRepository;
-import com.ermiyas.exchange.application.ports.OrderBookRepository;
 import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.common.Odds;
 import com.ermiyas.exchange.domain.offer.Offer;
-import com.ermiyas.exchange.domain.offer.Position;
-import com.ermiyas.exchange.domain.orderbook.OrderBook;
+import com.ermiyas.exchange.domain.wallet.WalletService;
+import java.util.Objects;
+
 public class CreateOfferUseCase {
     private final OfferRepository offerRepository;
-    private final OrderBookRepository orderBookRepository;
+    private final WalletService walletService;
 
     public CreateOfferUseCase(
-        OfferRepository offerRepository,OrderBookRepository orderBookRepository){
+        OfferRepository offerRepository,WalletService walletService){
             this.offerRepository=offerRepository;
-            this.orderBookRepository=orderBookRepository;
-        }
-    public void execute(long offerId,long makerUserId,long outcomeId, Position position,Odds odds,Money stake){
-        Offer offer =new Offer(offerId,makerUserId,outcomeId,position,odds,stake);
-        OrderBook orderBook= orderBookRepository.findByOutcomeId(outcomeId);
-        orderBook.addOffer(offer);
-        offerRepository.save(offer);
-        orderBookRepository.save(orderBook);
+            this.walletService=Objects.requireNonNull(walletService);     
+           }
+   
+   
+   
+   
+    public long execute(long makerUserId,long outcomeId,Odds odds,Money stake){
+        //check and lock maker's money first
+        walletService.reserve(makerUserId, stake);
+        Offer newOffer=new Offer(0L, makerUserId,outcomeId,odds,stake);
+        Offer savedOffer=offerRepository.save(newOffer);
+        return savedOffer.id();
+
+
     }
     
 }

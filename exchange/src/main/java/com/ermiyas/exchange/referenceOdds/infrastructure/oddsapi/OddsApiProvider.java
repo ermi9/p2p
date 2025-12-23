@@ -2,6 +2,7 @@ package com.ermiyas.exchange.referenceOdds.infrastructure.oddsapi;
 import com.ermiyas.exchange.referenceOdds.domain.Fixture;
 import com.ermiyas.exchange.referenceOdds.domain.MarketType;
 import com.ermiyas.exchange.referenceOdds.domain.ReferenceOddsSnapshot;
+import com.ermiyas.exchange.referenceOdds.application.ports.OddsProvider;
 
 import java.lang.ref.Reference;
 import java.time.Instant;

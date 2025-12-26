@@ -2,50 +2,26 @@ package com.ermiyas.exchange.referenceOdds.domain;
 
 import java.time.Instant;
 import java.util.Objects;
-/**
- * A fixture represents a scheduled football match
- * that users can post offers on
- * 
- * It is a read-only fact coming from an external source
- * (OddsApi, scrapers, crawlers, etc).
- */
 
-public class Fixture {
-    private final String externalEventId;
-    private final String leagueKey;//soccer_epl,soccer_serie_a, etc
-    private final String homeTeam;
-    private final String awayTeam;
-    private final Instant kickoffTime;
+public final class Fixture {
 
-    public Fixture(
-            String externalEventId,
-            String leagueKey,
-            String homeTeam,
-            String awayTeam,
-            Instant kickoffTime
-    ){
-        this.externalEventId=externalEventId;
-        this.leagueKey=leagueKey;
-        this.homeTeam=homeTeam;
-        this.awayTeam=awayTeam;
-        this.kickoffTime=kickoffTime;
+    private final String id;
+    private final League league;
+    private final String home;
+    private final String away;
+    private final Instant kickoff;
+
+    public Fixture(String id, League league, String home, String away, Instant kickoff) {
+        this.id = Objects.requireNonNull(id);
+        this.league = Objects.requireNonNull(league);
+        this.home = Objects.requireNonNull(home);
+        this.away = Objects.requireNonNull(away);
+        this.kickoff = Objects.requireNonNull(kickoff);
     }
-    public String externalEventId(){
-        return externalEventId;
-    }
-    public String leagueKey(){
-        return leagueKey;
-    }
-    public String homeTeam(){
-        return homeTeam;
-    }
-    public String awayTeam(){
-        return awayTeam;
-    }
-    public Instant kickoffTime(){
-        return kickoffTime;
-    }
-    public boolean isUpcoming(Instant now){
-        return kickoffTime.isAfter(now);
-    }
+
+    public String id() { return id; }
+    public League league() { return league; }
+    public String home() { return home; }
+    public String away() { return away; }
+    public Instant kickoff() { return kickoff; }
 }

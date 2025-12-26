@@ -1,14 +1,23 @@
 package com.ermiyas.exchange.referenceOdds.domain;
-/*
- *Market types suppported by the referenceOdds system 
- * 
- * New market types can be added without changing
- * existing providers or usecases
- *
- */
-public enum MarketType {
-    H2H,    //Match winner (Home / Draw / Away)
-    TOTALS, //Over / Under
-    HANDICAP
-    
+
+public final class MarketType {
+
+    public static final MarketType H2H = new MarketType("H2H");
+
+    private final String code;
+
+    private MarketType(String code) {
+        this.code = code;
+    }
+
+    public static MarketType of(String code) {
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("MarketType code cannot be blank");
+        }
+        return new MarketType(code);
+    }
+
+    public String code() {
+        return code;
+    }
 }

@@ -4,4 +4,5 @@ public enum Outcome {
     HOME,
     DRAW,
     AWAY
+
 }

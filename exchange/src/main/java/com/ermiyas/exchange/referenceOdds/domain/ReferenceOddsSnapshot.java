@@ -1,49 +1,39 @@
 package com.ermiyas.exchange.referenceOdds.domain;
 
-import com.ermiyas.exchange.common.Odds;
-
+import com.ermiyas.exchange.common.Money;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Map;
 
 public final class ReferenceOddsSnapshot {
 
-    private final String externalEventId;
-    private final String providerId;
-    private final MarketType marketType;
-    private final Map<Outcome, Odds> odds;
+    private final Fixture fixture;
+    private final MarketType market;
+    private final Map<Outcome, Money> prices;
     private final Instant fetchedAt;
 
     public ReferenceOddsSnapshot(
-            String externalEventId,
-            String providerId,
-            MarketType marketType,
-            Map<Outcome, Odds> odds,
+            Fixture fixture,
+            MarketType market,
+            Map<Outcome, Money> prices,
             Instant fetchedAt
     ) {
-        this.externalEventId = externalEventId;
-        this.providerId = providerId;
-        this.marketType = marketType;
-        this.odds = Map.copyOf(odds);
-        this.fetchedAt = fetchedAt;
+        this.fixture = Objects.requireNonNull(fixture);
+        this.market = Objects.requireNonNull(market);
+        this.prices = Map.copyOf(Objects.requireNonNull(prices));
+        this.fetchedAt = Objects.requireNonNull(fetchedAt);
     }
 
-    public String externalEventId() {
-        return externalEventId;
-    }
+    public Fixture fixture() { return fixture; }
+    public MarketType market() { return market; }
+    public Map<Outcome, Money> prices() { return prices; }
+    public Instant fetchedAt() { return fetchedAt; }
 
-    public String providerId() {
-        return providerId;
-    }
-
-    public MarketType marketType() {
-        return marketType;
-    }
-
-    public Map<Outcome, Odds> odds() {
-        return odds;
-    }
-
-    public Instant fetchedAt() {
-        return fetchedAt;
+    public static ReferenceOddsSnapshot now(
+            Fixture fixture,
+            MarketType market,
+            Map<Outcome, Money> prices
+    ) {
+        return new ReferenceOddsSnapshot(fixture, market, prices, Instant.now());
     }
 }

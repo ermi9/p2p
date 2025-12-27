@@ -1,7 +1,6 @@
 package com.ermiyas.exchange.domain.wallet;
 
 import com.ermiyas.exchange.common.Money;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,9 +25,7 @@ public final class Wallet {
         this.reservedBalance = Money.zero();
     }
 
-    // --------------------
     // Balance views
-    // --------------------
 
     public Money totalBalance() {
         return totalBalance;
@@ -42,9 +39,7 @@ public final class Wallet {
         return totalBalance.minus(reservedBalance);
     }
 
-    // --------------------
     // Cash operations
-    // --------------------
 
     public WalletTransaction deposit(Money amount, String reference) {
         requirePositive(amount);
@@ -72,9 +67,7 @@ public final class Wallet {
         return tx;
     }
 
-    // --------------------
     // Betting flows
-    // --------------------
 
     /**
      * Finalizes a bet debit.
@@ -116,9 +109,7 @@ public final class Wallet {
         return tx;
     }
 
-    // --------------------
-    // Reservation logic
-    // --------------------
+    //reservation logic
 
     public void reserve(Money amount) {
         requirePositive(amount);
@@ -138,17 +129,13 @@ public final class Wallet {
         reservedBalance = reservedBalance.minus(amount);
     }
 
-    // --------------------
     // History
-    // --------------------
 
     public List<WalletTransaction> transactions() {
         return Collections.unmodifiableList(transactions);
     }
 
-    // --------------------
     // Helpers
-    // --------------------
 
     private void requirePositive(Money amount) {
         Objects.requireNonNull(amount, "amount");

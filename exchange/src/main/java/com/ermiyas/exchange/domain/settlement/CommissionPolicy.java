@@ -1,5 +1,7 @@
 package com.ermiyas.exchange.domain.settlement;
+import java.math.BigDecimal;
 
+import com.ermiyas.exchange.common.Money;
 public final class CommissionPolicy {
 
     private final double rate; // e.g. 0.02 = 2%
@@ -12,7 +14,7 @@ public final class CommissionPolicy {
     }
 
     public Money calculate(Money profit) {
-        return profit.multiply(rate);
+        return profit.multiply(BigDecimal.valueOf(rate));
     }
 }
 

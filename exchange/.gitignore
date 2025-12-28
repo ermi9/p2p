@@ -1,1 +1,23 @@
-.env
+# Java/Spring Boot
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+.metadata/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project/
+.classpath/
+
+# API key
+src/main/resources/application.properties
+
+# OS files
+.DS_Store
+Thumbs.db

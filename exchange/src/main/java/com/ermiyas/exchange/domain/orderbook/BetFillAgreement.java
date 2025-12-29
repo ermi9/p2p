@@ -21,9 +21,9 @@ public class BetFillAgreement {
     private  BetFillAgreement(OfferId offerId,long takerUserId,Money makerStakePortion,Money liability,Odds odds, String reference,Instant createdAt){
         this.offerId = offerId;
         this.takerUserId = takerUserId;
-        this.makerStakePortion = makerStakePortion; // ← assignment for new field
+        this.makerStakePortion = makerStakePortion; // 
         this.liability = liability;
-        this.odds = odds;                           // ← assignment for new field
+        this.odds = odds;                           // 
         this.reference = reference;
         this.createdAt = createdAt;
     }

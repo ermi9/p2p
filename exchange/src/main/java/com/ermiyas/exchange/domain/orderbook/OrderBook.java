@@ -11,7 +11,6 @@ import java.util.Objects;
 
 public final class OrderBook {
 
-    // Immutable list of fill agreements (contract facts)
     private final List<BetFillAgreement> agreements = new ArrayList<>();
 
     /**

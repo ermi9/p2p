@@ -65,7 +65,7 @@ public final class Offer {
             throw new OrderBookException("Liability exceeds remaining stake exposure");
         }
 
-        BigDecimal proportion = liability.value().divide(originalStake.value(), 4, RoundingMode.HALF_UP);
+        BigDecimal proportion = liability.value().divide(originalStake.value(), 4, RoundingMode.HALF_UP);//could be simplified later on
         Money stakeToConsume = originalStake.multiply(proportion);
 
         // Deduct once from remaining stake
@@ -83,7 +83,7 @@ public final class Offer {
         return agreement;
     }
 
-    // CHANGED: exception type fixed to state violation
+    //  exception type fixed to state violation
     public void cancel() {
         if (status != OfferStatus.OPEN) {
             throw new IllegalStateException("Only OPEN offers can be cancelled");
@@ -91,7 +91,7 @@ public final class Offer {
         status = OfferStatus.CANCELLED;
     }
 
-    // CHANGED: removed string outcome parameter, offer doesn’t decide winners
+    //  removed string outcome parameter, offer doesn’t decide winners
     public void markSettled() {
         if (fills.isEmpty()) {
             throw new IllegalStateException("Cannot mark SETTLED without fills");

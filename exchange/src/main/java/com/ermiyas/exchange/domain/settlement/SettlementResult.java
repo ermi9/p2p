@@ -4,36 +4,79 @@ import com.ermiyas.exchange.common.Money;
 import java.util.Objects;
 
 public final class SettlementResult {
-    private final boolean makerWon;
-    private final Money makerOutcomeEffect;
-    private final Money takerOutcomeEffect;
+
+    private final BetSide winningSide;
+    private final Money makerProfit;
+    private final Money takerProfit;
+    private final Money platformCommission;
     private final String reference;
 
-    public SettlementResult(boolean makerWon, Money makerOutcomeEffect, Money takerOutcomeEffect,String reference) {
-        this.makerWon = makerWon;
-        this.makerOutcomeEffect = Objects.requireNonNull(makerOutcomeEffect,"makerOutcomeEffect");
-        this.takerOutcomeEffect = Objects.requireNonNull(takerOutcomeEffect,"takerOutcomeEffect");
-        this.reference=Objects.requireNonNull(reference,"reference");
-        if(reference.isBlank())
+    private SettlementResult(
+            BetSide winningSide,
+            Money makerProfit,
+            Money takerProfit,
+            Money platformCommission,
+            String reference
+    ) {
+        this.winningSide = Objects.requireNonNull(winningSide, "winningSide");
+        this.makerProfit = Objects.requireNonNull(makerProfit, "makerProfit");
+        this.takerProfit = Objects.requireNonNull(takerProfit, "takerProfit");
+        this.platformCommission = Objects.requireNonNull(platformCommission, "platformCommission");
+        this.reference = Objects.requireNonNull(reference, "reference");
+
+        if (reference.isBlank())
             throw new IllegalArgumentException("reference cannot be blank");
-    }
-    public static SettlementResult makerWins(Money makerProfit,Money takerLoss,String reference){
-        return new SettlementResult(true, makerProfit, takerLoss, reference);
-    }
-    public static SettlementResult takerWins(Money makerLoss,Money takerProfit, String reference){
-        return new SettlementResult(false, makerLoss, takerProfit, reference);
-    }
-    public boolean makerWon(){
-        return makerWon;
-    }
-    public Money makerOutcomeEffect(){
-        return makerOutcomeEffect;
-    }
-    public Money takerOutcomeEffect(){
-        return takerOutcomeEffect;
-    }
-    public String reference(){
-        return reference;
+
+        // invariant: only one side can profit
+        if (!makerProfit.equals(Money.zero()) && !takerProfit.equals(Money.zero()))
+            throw new IllegalStateException("Only one side can profit");
     }
 
+    public static SettlementResult makerWins(
+            Money makerProfit,
+            Money platformCommission,
+            String reference
+    ) {
+        return new SettlementResult(
+                BetSide.MAKER,
+                makerProfit,
+                Money.zero(),
+                platformCommission,
+                reference
+        );
+    }
+
+    public static SettlementResult takerWins(
+            Money takerProfit,
+            Money platformCommission,
+            String reference
+    ) {
+        return new SettlementResult(
+                BetSide.TAKER,
+                Money.zero(),
+                takerProfit,
+                platformCommission,
+                reference
+        );
+    }
+
+    public BetSide winningSide() {
+        return winningSide;
+    }
+
+    public Money makerProfit() {
+        return makerProfit;
+    }
+
+    public Money takerProfit() {
+        return takerProfit;
+    }
+
+    public Money platformCommission() {
+        return platformCommission;
+    }
+
+    public String reference() {
+        return reference;
+    }
 }

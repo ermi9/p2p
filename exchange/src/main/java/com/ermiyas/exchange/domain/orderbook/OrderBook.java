@@ -3,6 +3,7 @@ package com.ermiyas.exchange.domain.orderbook;
 import com.ermiyas.exchange.common.Money;
 import com.ermiyas.exchange.domain.offer.Offer;
 import com.ermiyas.exchange.domain.offer.OfferId;
+import com.ermiyas.exchange.domain.offer.OfferStatus;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,7 +12,7 @@ import java.util.Objects;
 
 public final class OrderBook {
 
-    // Immutable list of fill agreements (contract facts)
+    // Immutable list of fill agreements 
     private final List<BetFillAgreement> agreements = new ArrayList<>();
 
     /**
@@ -23,9 +24,10 @@ public final class OrderBook {
         Objects.requireNonNull(liability, "liability");
         Objects.requireNonNull(reference, "reference");
 
-        if (offer.status().name().contains("CANCELLED") || offer.status().name().contains("SETTLED")) {
+        if (offer.status() != OfferStatus.OPEN && offer.status() != OfferStatus.PARTIALLY_TAKEN) {// changed to safer one and used the enum I declared
             throw new OrderBookException("Offer is not active or fillable.");
         }
+
 
         // Perform the fill inside the Offer aggregate
         BetFillAgreement agreement = offer.fill(liability, takerUserId, reference);

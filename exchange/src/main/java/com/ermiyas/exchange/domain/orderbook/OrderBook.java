@@ -12,7 +12,10 @@ import java.util.Objects;
 
 public final class OrderBook {
 
+<<<<<<< HEAD
     // Immutable list of fill agreements 
+=======
+>>>>>>> 9c2122f0000792bda0d186bc365f51e444fc88d5
     private final List<BetFillAgreement> agreements = new ArrayList<>();
 
     /**

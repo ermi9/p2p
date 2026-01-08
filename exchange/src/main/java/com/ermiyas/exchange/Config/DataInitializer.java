@@ -1,9 +1,11 @@
 package com.ermiyas.exchange.Config;
 
-import com.ermiyas.exchange.domain.model.User;
+import com.ermiyas.exchange.domain.model.user.User;
+import com.ermiyas.exchange.domain.repository.wallet.WalletRepository;
+import com.ermiyas.exchange.domain.model.user.StandardUser; 
+import com.ermiyas.exchange.domain.model.user.AdminUser;    
 import com.ermiyas.exchange.domain.model.Wallet;
 import com.ermiyas.exchange.domain.vo.Money;
-import com.ermiyas.exchange.domain.repository.WalletRepository;
 import com.ermiyas.exchange.infrastructure.persistence.JpaUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+
 
 @Component
 @RequiredArgsConstructor
@@ -23,19 +26,23 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         if (userRepository.count() == 0) {
-            // Create a Test User
-            User user = User.builder()
-                    .username("test_user")
-                    .email("test@example.com")
-                    .build();
             
-            userRepository.save(user);
 
-            // Create their Wallet with $1,000
-            Wallet wallet = new Wallet(user, Money.of(new BigDecimal("1000.00")));
-            walletRepository.save(wallet);
+            User standardUser = new StandardUser("test_user", "test@example.com");
+            userRepository.save(standardUser);
 
-            System.out.println(">>> Test Data Initialized: user 'test_user' created with $1000 balance.");
+            Wallet standardWallet = new Wallet(standardUser, Money.of(new BigDecimal("1000.00")));
+            walletRepository.save(standardWallet);
+
+            User adminUser = new AdminUser("admin_user", "admin@exchange.com");
+            userRepository.save(adminUser);
+
+            Wallet adminWallet = new Wallet(adminUser, Money.of(new BigDecimal("5000.00")));
+            walletRepository.save(adminWallet);
+
+            System.out.println(">>> Test Data Initialized:");
+            System.out.println(">>> Created StandardUser 'test_user' with $1000.");
+            System.out.println(">>> Created AdminUser 'admin_user' with $5000.");
         }
     }
 }

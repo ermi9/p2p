@@ -1,9 +1,10 @@
 package com.ermiyas.exchange.api;
 
 import com.ermiyas.exchange.domain.model.Wallet;
+import com.ermiyas.exchange.domain.repository.wallet.WalletRepository;
 import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.vo.CommissionPolicy;
-import com.ermiyas.exchange.domain.repository.WalletRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,13 +19,10 @@ public class WalletController {
 
     private final WalletRepository walletRepository;
 
-    /**
-     * Fix: Handled the Optional return from the repository using .orElse(null)
-     */
+  
     @GetMapping("/{userId}")
     public ResponseEntity<?> getBalance(@PathVariable Long userId) {
-        // Fix: findByUserId returns Optional, so we use .orElse(null) or .isPresent()
-        Wallet wallet = walletRepository.findByUserId(userId).orElse(null);
+        Wallet wallet = walletRepository.getById(userId);
         
         if (wallet == null) {
             return ResponseEntity.notFound().build();
@@ -37,14 +35,10 @@ public class WalletController {
         ));
     }
 
-    /**
-     * Fix: Ensured the deposit logic matches the method names in Wallet.java
-     */
     @PostMapping("/{userId}/deposit")
     public ResponseEntity<?> deposit(@PathVariable Long userId, @RequestParam double amount) {
         try {
-            Wallet wallet = walletRepository.findByUserId(userId)
-                    .orElseThrow(() -> new RuntimeException("Wallet not found"));
+            Wallet wallet = walletRepository.getByUserId(userId);
 
             Money depositAmount = new Money(BigDecimal.valueOf(amount));
             
@@ -52,7 +46,6 @@ public class WalletController {
             CommissionPolicy noFee = new CommissionPolicy(BigDecimal.ZERO);
             
             // Using the settleWin method as a way to credit the account
-            // In your Wallet.java, this adds to totalBalance
             wallet.settleWin(Money.zero(), depositAmount, noFee);
 
             walletRepository.save(wallet);

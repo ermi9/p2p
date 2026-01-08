@@ -1,14 +1,20 @@
 package com.ermiyas.exchange.api;
 
 import com.ermiyas.exchange.domain.model.*;
+import com.ermiyas.exchange.domain.model.user.User;
 import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.vo.Odds;
-import com.ermiyas.exchange.domain.repository.*;
+import com.ermiyas.exchange.domain.repository.event.EventRepository;
+import com.ermiyas.exchange.domain.repository.offer.OfferRepository;
+import com.ermiyas.exchange.domain.repository.wallet.WalletRepository;
 import com.ermiyas.exchange.infrastructure.persistence.JpaUserRepository;
+import com.ermiyas.exchange.domain.exception.ExchangeException; 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+
 
 @RestController
 @RequestMapping("/api/offers")
@@ -20,47 +26,53 @@ public class OfferController {
     private final JpaUserRepository userRepository;
     private final WalletRepository walletRepository;
 
-    /**
-     * Requirement: Maker creates an offer.
-     * This locks the maker's stake in their wallet.
-     */
-   @PostMapping
-@Transactional
-public ResponseEntity<?> createOffer(
-        @RequestParam Long eventId,
-        @RequestParam Long makerId,
-        @RequestParam String stake,
-        @RequestParam String outcome,
-        @RequestParam String makerOdds) { // Added makerOdds parameter
+    @PostMapping
+    @Transactional
+    public ResponseEntity<?> createOffer(
+            @RequestParam Long eventId,
+            @RequestParam Long makerId,
+            @RequestParam String stake,
+            @RequestParam String outcome,
+            @RequestParam String makerOdds) {
 
-    // 1. Fetch dependencies
-    Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new RuntimeException("Event not found"));
-    User maker = userRepository.findById(makerId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    Wallet wallet = walletRepository.findByUserId(makerId)
-            .orElseThrow(() -> new RuntimeException("Wallet not found"));
-    
-    // 2. Process the Custom Odds and Stake
-    Odds customOdds = Odds.of(new java.math.BigDecimal(makerOdds));
-    Money amountToStake = Money.of(stake);
+        try {
+            Event event = eventRepository.getById(eventId);
+            if (event == null) {
+                throw new ExchangeException("Event not found with ID: " + eventId);
+            }
+            
+            User maker = userRepository.findById(makerId)
+                    .orElseThrow(() -> new ExchangeException("User not found with ID: " + makerId));
+            
+            Wallet wallet = walletRepository.getByUserId(makerId);
+            if (wallet == null) {
+                throw new ExchangeException("Wallet not found for user: " + makerId);
+            }
 
-    // 3. Financial Logic: Reserve the maker's stake
-    wallet.reserve(amountToStake);
-    walletRepository.save(wallet);
+            Odds customOdds = Odds.of(new java.math.BigDecimal(makerOdds));
+            Money amountToStake = Money.of(stake);
 
-    // 4. Create Offer with the User's chosen odds
-    Offer offer = Offer.builder()
-            .event(event)
-            .maker(maker)
-            .odds(customOdds) // Using the Maker's input!
-            .originalStake(amountToStake)
-            .remainingStake(amountToStake)
-            .predictedOutcome(Outcome.valueOf(outcome))
-            .status(OfferStatus.OPEN)
-            .build();
+            wallet.reserve(amountToStake);
+            walletRepository.save(wallet);
 
-    Offer savedOffer = offerRepository.save(offer);
-    return ResponseEntity.ok("Offer created with ID: " + savedOffer.getId() + " at custom odds: " + customOdds.value());
-}
+            Offer offer = Offer.builder()
+                    .event(event)
+                    .maker(maker)
+                    .odds(customOdds)
+                    .originalStake(amountToStake)
+                    .remainingStake(amountToStake)
+                    .predictedOutcome(Outcome.valueOf(outcome))
+                    .status(OfferStatus.OPEN)
+                    .build();
+
+            Offer savedOffer = offerRepository.save(offer);
+            return ResponseEntity.ok("Offer created with ID: " + savedOffer.getId());
+
+        } catch (ExchangeException e) {
+            // Robustness: Catching checked domain exceptions for specific HTTP feedback
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid outcome specified.");
+        }
+    }
 }

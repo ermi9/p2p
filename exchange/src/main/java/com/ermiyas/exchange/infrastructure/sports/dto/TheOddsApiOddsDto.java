@@ -1,14 +1,25 @@
 package com.ermiyas.exchange.infrastructure.sports.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import java.util.List;
 
+/**
+ * REFACTORED: TheOddsApiOddsDto (OCP Friendly)
+ */
 @Data
 public class TheOddsApiOddsDto {
     private String id;
-    private String sport_title;
-    private String home_team;
-    private String away_team;
+
+    @JsonProperty("sport_title")
+    private String sportTitle;
+
+    @JsonProperty("home_team")
+    private String homeTeam;
+
+    @JsonProperty("away_team")
+    private String awayTeam;
+
     private List<Bookmaker> bookmakers;
 
     @Data

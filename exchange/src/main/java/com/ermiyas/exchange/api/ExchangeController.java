@@ -3,7 +3,7 @@ package com.ermiyas.exchange.api;
 import com.ermiyas.exchange.application.TradeService;
 import com.ermiyas.exchange.domain.model.Event;
 import com.ermiyas.exchange.domain.model.EventStatus;
-import com.ermiyas.exchange.domain.repository.EventRepository;
+import com.ermiyas.exchange.domain.repository.event.EventRepository;
 import com.ermiyas.exchange.domain.vo.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

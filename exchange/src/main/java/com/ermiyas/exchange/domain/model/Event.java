@@ -1,6 +1,9 @@
 package com.ermiyas.exchange.domain.model;
 
+import com.ermiyas.exchange.domain.logic.SettlementStrategy;
 import com.ermiyas.exchange.domain.vo.Odds;
+import com.ermiyas.exchange.domain.exception.ExchangeException;
+import com.ermiyas.exchange.domain.exception.IllegalBetException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,15 +13,14 @@ import java.util.List;
 
 /**
  * PURE OOP: Event Aggregate Root.
- * Represents a match/fixture. Stores reference odds for the UI
- * and handles the logic for determining the winning outcome.
+ * Updated: Added 'league' field so the AdminSettlementService can 
+ * fetch the correct scores from the external API.
  */
 @Entity
 @Table(name = "events")
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class Event {
 
@@ -26,21 +28,30 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ID from external Sports API (e.g., The Odds API)
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String externalId;
 
     private String homeTeam;
     private String awayTeam;
     private LocalDateTime startTime;
 
+    /**
+     *  Added League field.
+     */
     @Enumerated(EnumType.STRING)
+    private League league;
+
+    @Enumerated(EnumType.STRING)
+    private MarketType marketType;
+
+    @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE)
     private EventStatus status;
 
     @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE)
     private Outcome result;
 
-    // --- Reference Odds (Read-Only for Frontend) ---
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "ref_home_odds"))
     private Odds refHomeOdds;
@@ -57,33 +68,32 @@ public class Event {
     @Builder.Default
     private List<Offer> offers = new ArrayList<>();
 
-    /**
-     * Logic: Admin-triggered result update.
-     * Maps scores to the Outcome enum.
-     */
-    public void determineWinner(int homeScore, int awayScore) {
-        if (this.status == EventStatus.SETTLED) {
-            throw new IllegalStateException("Event is already settled and cannot be modified");
-        }
-
-        if (homeScore > awayScore) {
-            this.result = Outcome.HOME_WIN;
-        } else if (awayScore > homeScore) {
-            this.result = Outcome.AWAY_WIN;
-        } else {
-            this.result = Outcome.DRAW;
-        }
-
+    public void processResult(int homeScore, int awayScore, SettlementStrategy strategy) throws ExchangeException {
+        validateSettlementState();
+        this.result = strategy.determineWinner(homeScore, awayScore);
         this.status = EventStatus.COMPLETED;
     }
 
-    /**
-     * Logic: Transitions the event to settled after funds are released.
-     */
-    public void markAsSettled() {
+    public void markAsSettled() throws ExchangeException {
         if (this.status != EventStatus.COMPLETED) {
-            throw new IllegalStateException("Cannot settle an event that is not marked COMPLETED");
+            throw new IllegalBetException("State Violation: Cannot settle an event that is not COMPLETED.");
         }
+        
+        for (int i = 0; i < this.offers.size(); i++) {
+            Offer offer = this.offers.get(i);
+            OfferStatus offerStatus = offer.getStatus();
+            
+            if (offerStatus == OfferStatus.OPEN || offerStatus == OfferStatus.PARTIALLY_TAKEN) {
+                throw new IllegalBetException("Integrity Error: Offer #" + offer.getId() + " is still active. Finalize or Cancel it first.");
+            }
+        }
+
         this.status = EventStatus.SETTLED;
+    }
+
+    private void validateSettlementState() throws IllegalBetException {
+        if (this.status == EventStatus.SETTLED) {
+            throw new IllegalBetException("Integrity Error: Event is already settled and immutable.");
+        }
     }
 }

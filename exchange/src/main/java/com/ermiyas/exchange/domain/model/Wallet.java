@@ -1,17 +1,17 @@
-package com.ermiyas.exchange.domain.model;
+package com.ermiyas.exchange.domain.model; 
 
 import com.ermiyas.exchange.domain.vo.CommissionPolicy;
 import com.ermiyas.exchange.domain.vo.Money;
+import com.ermiyas.exchange.domain.exception.InsufficientFundsException; 
+import com.ermiyas.exchange.domain.exception.ExchangeException;
+import com.ermiyas.exchange.domain.exception.IllegalBetException;
+import com.ermiyas.exchange.domain.model.user.User; 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.Objects;
 
-/**
- * PURE OOP: Wallet Aggregate Root.
- * Implements the Reservation Pattern to manage user funds.
- * Total Balance = Available + Reserved.
- */
+
 @Entity
 @Table(name = "wallets")
 @Getter
@@ -29,10 +29,12 @@ public class Wallet {
 
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "total_balance", nullable = false))
+    @Setter(AccessLevel.NONE) 
     private Money totalBalance;
 
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "reserved_balance", nullable = false))
+    @Setter(AccessLevel.NONE) 
     private Money reservedBalance;
 
     public Wallet(User user, Money initialBalance) {
@@ -41,63 +43,61 @@ public class Wallet {
         this.reservedBalance = Money.zero();
     }
 
-    /**
-     * Business Logic: Returns the amount the user can actually use for new bets.
-     */
+
     public Money availableBalance() {
-        return totalBalance.minus(reservedBalance);
+
+        try {
+            return totalBalance.minus(reservedBalance);
+        }
+        
+        catch (IllegalBetException e) {
+            throw new IllegalStateException("Critical Consistency Error: Reserved exceeds Total", e);
+        }    
     }
 
-    /**
-     * Logic: Reserves a specific amount for a pending bet.
-     * Decreases available balance without changing total balance yet.
-     */
-    public void reserve(Money amount) {
-        if (amount.compareTo(availableBalance()) > 0) {
-            throw new IllegalStateException("Insufficient available funds to reserve " + amount);
+
+    public void reserve(Money amount) throws InsufficientFundsException {
+        if (amount.isGreaterThan(availableBalance())) {
+            throw new InsufficientFundsException("Reservation failed: " + amount + " exceeds available balance.");
         }
         this.reservedBalance = this.reservedBalance.plus(amount);
     }
 
-    /**
-     * Logic: Handles the winning scenario.
-     * 1. Release the original risk (reservedBalance -> available).
-     * 2. Add the profit from the loser (minus commission).
-     */
-    public void settleWin(Money stakeToRelease, Money netProfit, CommissionPolicy policy) {
-        if (stakeToRelease.compareTo(reservedBalance) > 0) {
-            throw new IllegalStateException("Cannot release more than currently reserved");
-        }
+
+    public void settleWin(Money stakeToRelease, Money netProfit, CommissionPolicy policy) throws ExchangeException {
+        validateReservation(stakeToRelease);
         
-        // Return the reserved risk to the available pool (by reducing reserved amount)
         this.reservedBalance = this.reservedBalance.minus(stakeToRelease);
-        
-        // Add the gain from the other party minus the platform cut
         Money netGain = policy.apply(netProfit);
         this.totalBalance = this.totalBalance.plus(netGain);
     }
 
-    /**
-     * Logic: Handles the losing scenario.
-     * Permanently removes the reserved risk from the total balance.
-     */
-    public void settleLoss(Money stakeToLose) {
-        if (stakeToLose.compareTo(reservedBalance) > 0) {
-            throw new IllegalStateException("Loss amount exceeds reserved balance");
-        }
+
+    public void settleLoss(Money stakeToLose) throws ExchangeException {
+        validateReservation(stakeToLose);
         
-        // Deduct from both to finalize the loss
         this.reservedBalance = this.reservedBalance.minus(stakeToLose);
         this.totalBalance = this.totalBalance.minus(stakeToLose);
     }
-    /**
- * Logic: Returns unmatched funds to the available pool.
- * Does not change total balance, just reduces reserved amount.
- */
-    public void unreserve(Money amount) {
-        if (amount.compareTo(reservedBalance) > 0) {
-            throw new IllegalStateException("Cannot unreserve more than currently reserved");
+
+
+    public void deposit(Money amount) {
+        if (amount.isZero() || amount.isNegative()) {
+            throw new IllegalArgumentException("Deposit amount must be positive");
         }
+        this.totalBalance = this.totalBalance.plus(amount);
+    }
+
+
+    public void unreserve(Money amount) throws ExchangeException {
+        validateReservation(amount);
         this.reservedBalance = this.reservedBalance.minus(amount);
+    }
+
+
+    private void validateReservation(Money amount) throws ExchangeException {
+        if (amount.isGreaterThan(reservedBalance)) {
+            throw new IllegalBetException("Financial Integrity Error: Cannot release " + amount + " as it exceeds reserved funds.");
+        }
     }
 }

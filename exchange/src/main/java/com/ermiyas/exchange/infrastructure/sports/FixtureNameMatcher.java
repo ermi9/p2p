@@ -1,20 +1,53 @@
 package com.ermiyas.exchange.infrastructure.sports;
 
 import org.springframework.stereotype.Component;
+import java.util.List;
 
+/**
+ * REFACTORED: FixtureNameMatcher (OCP Friendly)
+ * This class is now "closed for modification" but "open for extension".
+ *
+ */
 @Component
 public class FixtureNameMatcher {
 
-    /**
-     * Requirement: Contains logic for name matching.
-     * Example: "Arsenal" matches "Arsenal FC"
-     */
-    public boolean namesMatch(String nameA, String nameB) {
-        if (nameA == null || nameB == null) return false;
-        
-        String cleanA = nameA.toLowerCase().trim();
-        String cleanB = nameB.toLowerCase().trim();
+    private final List<NameMatchingStrategy> strategies;
 
-        return cleanA.contains(cleanB) || cleanB.contains(cleanA);
+    public FixtureNameMatcher(List<NameMatchingStrategy> strategies) {
+        this.strategies = strategies;
+    }
+
+
+    public boolean namesMatch(String nameA, String nameB) {
+        if (nameA == null || nameB == null) {
+            return false;
+        }
+        
+        for (NameMatchingStrategy strategy : strategies) {
+            if (strategy.matches(nameA, nameB)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Strategy interface for different matching algorithms.
+     */
+    public interface NameMatchingStrategy {
+        boolean matches(String nameA, String nameB);
+    }
+
+    /**
+     * Implementation: Contains our original "contains" logic.
+     */
+    @Component
+    public static class DefaultContainsMatcher implements NameMatchingStrategy {
+        @Override
+        public boolean matches(String nameA, String nameB) {
+            String cleanA = nameA.toLowerCase().trim();
+            String cleanB = nameB.toLowerCase().trim();
+            return cleanA.contains(cleanB) || cleanB.contains(cleanA);
+        }
     }
 }

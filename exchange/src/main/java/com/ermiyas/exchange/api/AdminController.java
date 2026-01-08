@@ -2,16 +2,16 @@ package com.ermiyas.exchange.api;
 
 import com.ermiyas.exchange.application.AdminSyncService;
 import com.ermiyas.exchange.application.SettlementService;
+import com.ermiyas.exchange.domain.model.user.AdminUser;
+import com.ermiyas.exchange.domain.repository.user.AdminUserRepository; // Ensure this import exists
+import com.ermiyas.exchange.domain.exception.ExchangeException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST Controller for Admin actions.
- * Provides endpoints for manual refreshing of data and final settlement.
- */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -19,60 +19,65 @@ public class AdminController {
 
     private final AdminSyncService adminSyncService;
     private final SettlementService settlementService;
+    private final AdminUserRepository adminUserRepository; 
 
-    // Defined based on your requirement for Europe's Top 5 Leagues
     private static final List<String> TOP_5_LEAGUES = List.of(
-            "soccer_epl",                  // English Premier League
-            "soccer_spain_la_liga",        // La Liga
-            "soccer_germany_bundesliga",   // Bundesliga
-            "soccer_italy_serie_a",        // Serie A
-            "soccer_france_ligue_one"      // Ligue 1
+            "soccer_epl", "soccer_spain_la_liga", "soccer_germany_bundesliga",
+            "soccer_italy_serie_a", "soccer_france_ligue_one"
     );
 
-    /**
-     * Button: "Refresh Fixtures"
-     * Fetches match names/teams and saves them to the DB.
-     */
+
+    private AdminUser getAdminContext() throws ExchangeException {
+        // Fetch the first admin (created by your DataInitializer/UserFactory)
+        return adminUserRepository.findAll().stream().findFirst()
+                .orElseThrow(() -> new ExchangeException("Unauthorized: No Admin found in system."));
+    }
+
     @PostMapping("/sync-fixtures")
     public ResponseEntity<String> syncFixtures() {
-        adminSyncService.syncLeagues(TOP_5_LEAGUES);
-        return ResponseEntity.ok("Successfully synced fixtures for Top 5 Leagues.");
+        try {
+            AdminUser admin = getAdminContext();
+            adminSyncService.syncLeagues(admin, TOP_5_LEAGUES); 
+            return ResponseEntity.ok("Successfully synced fixtures.");
+        } catch (ExchangeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 
-    /**
-     * Button: "Refresh Reference Odds"
-     * Fetches the best available H2H odds and updates existing events.
-     */
     @PostMapping("/refresh-odds")
     public ResponseEntity<String> refreshOdds() {
-        adminSyncService.refreshOdds(TOP_5_LEAGUES);
-        return ResponseEntity.ok("Reference odds have been updated from external API.");
+        try {
+            AdminUser admin = getAdminContext();
+            adminSyncService.refreshOdds(admin, TOP_5_LEAGUES); 
+            return ResponseEntity.ok("Reference odds updated.");
+        } catch (ExchangeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 
-    /**
-     * Button: "Refresh Scores"
-     * Fetches current scores for completed or live matches.
-     */
     @PostMapping("/refresh-scores")
     public ResponseEntity<String> refreshScores() {
-        adminSyncService.refreshScores(TOP_5_LEAGUES);
-        return ResponseEntity.ok("Latest scores fetched and saved to database.");
+        try {
+            AdminUser admin = getAdminContext();
+            adminSyncService.refreshScores(admin, TOP_5_LEAGUES); 
+            return ResponseEntity.ok("Latest scores fetched.");
+        } catch (ExchangeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 
-    /**
-     * Button: "Settle Match"
-     * Triggers the transfer of funds between Maker and Taker based on the final result.
-     * Note: In a student project, you can pass 0,0 here if the scores are already in the DB,
-     * or use these params to override.
-     */
     @PostMapping("/settle/{eventId}")
     public ResponseEntity<String> settleMatch(
             @PathVariable Long eventId,
             @RequestParam(defaultValue = "0") int homeScore,
             @RequestParam(defaultValue = "0") int awayScore) {
         
-        // This moves the money based on the Outcome
-        settlementService.settleEvent(eventId, homeScore, awayScore);
-        return ResponseEntity.ok("Event " + eventId + " settled. Funds distributed successfully.");
+        try {
+            AdminUser admin = getAdminContext();
+            settlementService.settleEvent(admin, eventId, homeScore, awayScore);
+            return ResponseEntity.ok("Event settled. Funds distributed.");
+        } catch (ExchangeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }

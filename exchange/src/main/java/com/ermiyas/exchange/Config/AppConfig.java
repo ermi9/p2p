@@ -1,6 +1,8 @@
 package com.ermiyas.exchange.Config;
 
 import com.ermiyas.exchange.domain.vo.CommissionPolicy;
+import com.ermiyas.exchange.domain.vo.StandardPercentagePolicy;
+import com.ermiyas.exchange.domain.exception.ExchangeException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -10,20 +12,18 @@ import java.math.BigDecimal;
 @Configuration
 public class AppConfig {
 
-    /**
-     * Required for TheOddsApiClient to make HTTP requests.
-     */
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
     /**
-     * Requirement: Set the platform commission (e.g., 5%).
-     * Only applied to the net profit of winners.
+     * Requirement: Provide the concrete strategy for commission.
+     * Fixed: Returns StandardPercentagePolicy instead of trying to instantiate the interface.
      */
     @Bean
-    public CommissionPolicy commissionPolicy() {
-        return new CommissionPolicy(new BigDecimal("0.05"));
+    public CommissionPolicy commissionPolicy() throws ExchangeException {
+        // Using 0.05 for a 5% commission rate
+        return new StandardPercentagePolicy(new BigDecimal("0.05"));
     }
 }

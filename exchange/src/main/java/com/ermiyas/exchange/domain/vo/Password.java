@@ -2,7 +2,6 @@ package com.ermiyas.exchange.domain.vo;
 
 import com.ermiyas.exchange.domain.exception.ExchangeException;
 import com.ermiyas.exchange.domain.exception.IllegalBetException;
-import java.util.Objects;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 

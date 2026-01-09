@@ -26,4 +26,8 @@ public class EventRepositoryImpl implements EventRepository {
     public List<Event> findAllByStatus(EventStatus status) {
         return jpaEventRepository.findAllByStatus(status);
     }
+    @Override
+    public long count(){
+        return jpaEventRepository.count();
+    }
 }

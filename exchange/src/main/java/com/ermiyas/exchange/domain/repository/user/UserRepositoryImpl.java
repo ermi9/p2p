@@ -26,4 +26,8 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findByUsername(String username) {
         return jpaRepository.findByUsername(username);
     }
+    @Override
+    public long count(){
+        return jpaRepository.count();
+    }
 }

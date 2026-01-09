@@ -21,4 +21,8 @@ public class BetRepositoryImpl implements BetRepository {
 
         return jpaBetRepository.findAllByOfferEventId(eventId);
     }
+    @Override
+    public long count(){
+        return jpaBetRepository.count();
+    }
 }

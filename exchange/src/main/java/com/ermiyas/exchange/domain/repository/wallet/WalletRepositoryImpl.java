@@ -24,4 +24,8 @@ public class WalletRepositoryImpl implements WalletRepository {
     public Optional<Wallet> getByUserIdWithLock(Long userId){
         return jpaWalletRepository.findByUserIdWithLock(userId);
     }
+    @Override
+    public long count(){
+        return jpaWalletRepository.count();
+    }
 }

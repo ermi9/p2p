@@ -24,4 +24,8 @@ public class OfferRepositoryImpl implements OfferRepository {
     public List<Offer> findAllByEventId(Long eventId){
         return jpaOfferRepository.findByEventId(eventId);
     }
+    @Override
+    public long count(){
+        return jpaOfferRepository.count();
+    }
 }

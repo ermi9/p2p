@@ -11,4 +11,5 @@ public interface GenericRepository<T, ID> {
     T save(T entity);
     Optional<T> findById(ID id);
     List<T> findAll();
+    long count();
 }

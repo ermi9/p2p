@@ -13,12 +13,12 @@ import java.util.List;
 
 /**
  * PURE OOP: Event Aggregate Root.
- * Updated: Added 'league' field so the AdminSettlementService can 
- * fetch the correct scores from the external API.
+ * Updated to include reference source names for professional odd tracking.
  */
 @Entity
 @Table(name = "events")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -35,9 +35,6 @@ public class Event {
     private String awayTeam;
     private LocalDateTime startTime;
 
-    /**
-     *  Added League field.
-     */
     @Enumerated(EnumType.STRING)
     private League league;
 
@@ -52,6 +49,7 @@ public class Event {
     @Setter(AccessLevel.NONE)
     private Outcome result;
 
+    // Existing Odds Value Objects
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "ref_home_odds"))
     private Odds refHomeOdds;
@@ -63,6 +61,12 @@ public class Event {
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "ref_draw_odds"))
     private Odds refDrawOdds;
+
+    // These store the name of the bookmaker that provided the best odds above.
+    private String refHomeSource;
+    private String refAwaySource;
+    private String refDrawSource;
+    // ---------------------------------------------
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Builder.Default

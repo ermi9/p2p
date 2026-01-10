@@ -26,6 +26,9 @@ public class TheOddsApiOddsDto {
     public static class Bookmaker {
         private String key;
         private List<Market> markets;
+        
+        @JsonProperty("title") // 
+        private String title;
     }
 
     @Data

@@ -1,9 +1,11 @@
 package com.ermiyas.exchange.application.service;
 
+import com.ermiyas.exchange.domain.logic.SettlementStrategy;
 import com.ermiyas.exchange.domain.model.Event;
 import com.ermiyas.exchange.domain.model.League;
 import com.ermiyas.exchange.domain.model.MarketType;
 import com.ermiyas.exchange.domain.repository.event.EventRepository;
+import com.ermiyas.exchange.infrastructure.sports.BestOddsResult;
 import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider;
 import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider.SportRequest;
 import lombok.RequiredArgsConstructor;
@@ -14,82 +16,102 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * REFACTORED: AdminSyncService (OCP Friendly)
- * This service handles the "Sync Fixtures" button logic.
- * It fetches data from external APIs and persists it to the database.
- */
 @Service
 @RequiredArgsConstructor
 public class AdminSyncService {
 
     private final EventRepository eventRepository;
     private final List<SportsDataProvider> providers;
+    private final SettlementStrategy settlementStrategy;
 
-    /**
-     * Entry point for the "Sync Fixtures" button.
-     * Logic: Iterates through all leagues and all providers to refresh data.
-     */
     @Transactional
     public void syncAllFixtures() {
         League[] leagues = League.values();
-        
         for (int i = 0; i < leagues.length; i++) {
             League league = leagues[i];
-            // We assume 3-WAY/H2H as the default sync market
             SportRequest request = new SportRequest(league, MarketType.THREE_WAY);
             
             for (int j = 0; j < providers.size(); j++) {
                 SportsDataProvider provider = providers.get(j);
-                
                 if (provider.supports(request)) {
+                    // LOGGING: Check which provider is running
+                    System.out.println("SYNC: Starting sync for league " + league + " using provider " + provider.getClass().getSimpleName());
+                    
                     syncLeagueFixtures(provider, request);
+                    syncLeagueOdds(provider, request); 
                     syncLeagueScores(provider, request);
                 }
             }
         }
     }
 
-    /**
-     * Logic: Fetches upcoming matches and saves new ones to the DB.
-     */
     private void syncLeagueFixtures(SportsDataProvider provider, SportRequest request) {
         List<Event> externalEvents = provider.fetchUpcomingFixtures(request);
-        
         for (int i = 0; i < externalEvents.size(); i++) {
             Event incomingEvent = externalEvents.get(i);
             Optional<Event> existingEventOpt = eventRepository.getByExternalId(incomingEvent.getExternalId());
-            
             if (!existingEventOpt.isPresent()) {
-                // It's a new fixture, so we save it. 
-                // We ensure the league and market type are set correctly.
                 eventRepository.save(incomingEvent);
-            } else {
-                // Optional: Update start times for existing fixtures if they changed
-                Event existing = existingEventOpt.get();
-                // Logic to update start time could go here if needed
             }
         }
     }
 
     /**
-     * Logic: Fetches latest scores and updates existing events in the DB.
+     * Standard Java implementation of odds synchronization.
      */
+    private void syncLeagueOdds(SportsDataProvider provider, SportRequest request) {
+        Map<String, BestOddsResult> oddsResultMap = provider.fetchBestOddsWithSources(request);
+        
+        // LOGGING: Confirm if the infrastructure actually returned data
+        System.out.println("DEBUG: Odds map size for " + request.getLeague() + ": " + oddsResultMap.size());
+
+        for (Map.Entry<String, BestOddsResult> entry : oddsResultMap.entrySet()) {
+            Optional<Event> eventOpt = eventRepository.getByExternalId(entry.getKey());
+            
+            if (eventOpt.isPresent()) {
+                Event event = eventOpt.get();
+                BestOddsResult result = entry.getValue();
+                
+                // LOGGING: Verify source is not null before saving
+                if (result.getHomeSource() == null) {
+                    System.out.println("WARNING: Provider returned NULL source for event ID: " + entry.getKey());
+                }
+
+                // Set Odds
+                event.setRefHomeOdds(result.getHomeOdds());
+                event.setRefAwayOdds(result.getAwayOdds());
+                event.setRefDrawOdds(result.getDrawOdds());
+
+                // Set Sources
+                event.setRefHomeSource(result.getHomeSource());
+                event.setRefAwaySource(result.getAwaySource());
+                event.setRefDrawSource(result.getDrawSource());
+
+                eventRepository.save(event);
+            }
+        }
+    }
+
     private void syncLeagueScores(SportsDataProvider provider, SportRequest request) {
         Map<String, Integer[]> scoreMap = provider.fetchScores(request);
         
-        // We iterate through the scores provided by the API
         for (Map.Entry<String, Integer[]> entry : scoreMap.entrySet()) {
-            String externalId = entry.getKey();
-            Integer[] scores = entry.getValue();
+            Optional<Event> eventOpt = eventRepository.getByExternalId(entry.getKey());
             
-            Optional<Event> eventOpt = eventRepository.getByExternalId(externalId);
             if (eventOpt.isPresent()) {
                 Event event = eventOpt.get();
+                Integer[] scores = entry.getValue();
                 
-                // Only sync scores if the match isn't already settled
-                // This service just ensures the data is in the DB.
-                eventRepository.save(event); 
+                if (scores != null && scores.length >= 2) {
+                    try {
+                        // FIX: Call processResult instead of determineWinner
+                        // and pass the settlementStrategy
+                        event.processResult(scores[0], scores[1], settlementStrategy);
+                        eventRepository.save(event);
+                    } catch (Exception e) {
+                        System.err.println("Failed to process result for event " + event.getId() + ": " + e.getMessage());
+                    }
+                }
             }
         }
     }

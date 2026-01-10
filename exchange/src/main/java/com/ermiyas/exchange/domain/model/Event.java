@@ -66,7 +66,7 @@ public class Event {
     private String refHomeSource;
     private String refAwaySource;
     private String refDrawSource;
-    // ---------------------------------------------
+    // 
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Builder.Default

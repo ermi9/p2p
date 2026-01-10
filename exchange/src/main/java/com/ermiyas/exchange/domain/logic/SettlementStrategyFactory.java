@@ -18,7 +18,7 @@ public class SettlementStrategyFactory {
     private final Map<MarketType, SettlementStrategy> strategies = new HashMap<>();
 
     /**
-     * Logic: Spring finds every class that implements SettlementStrategy (marked with @Component)
+     * Spring finds every class that implements SettlementStrategy (marked with @Component)
      * and passes them into this constructor as a list.
      */
     public SettlementStrategyFactory(List<SettlementStrategy> strategyList) {

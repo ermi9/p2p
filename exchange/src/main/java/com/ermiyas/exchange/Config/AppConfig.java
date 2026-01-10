@@ -16,7 +16,7 @@ public class AppConfig {
 
     @Bean
     public CommissionPolicy commissionPolicy() throws ExchangeException {
-        // FIX: Use the concrete implementation class
+//
         return new StandardPercentagePolicy(new BigDecimal("0.05")); 
     }
 }

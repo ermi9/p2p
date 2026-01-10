@@ -20,6 +20,7 @@ public class ExchangeDtos {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateOfferRequest {
+        private Long makerId;
         private Long eventId;
         private Outcome outcome;
         private BigDecimal odds;
@@ -30,6 +31,7 @@ public class ExchangeDtos {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MatchBetRequest {
+        private Long takerId;
         private Long offerId;
         private BigDecimal amountToMatch;
     }
@@ -69,12 +71,21 @@ public class ExchangeDtos {
     @Builder
     public static class EventSummaryResponse {
         private Long id;
+        
         private String homeTeam;
         private String awayTeam;
         private LocalDateTime startTime;
+
         private String leagueName;
+        
         private Double homeOdds;
         private Double awayOdds;
         private Double drawOdds;
+
+        //to show with their brand names (like Bet365)
+        private String homeSource;
+        private String awaySource;
+        private String drawSource;
+
     }
 }

@@ -1,7 +1,7 @@
 package com.ermiyas.exchange.api.controller;
 
+import com.ermiyas.exchange.api.dto.ExchangeDtos;
 import com.ermiyas.exchange.application.service.MarketQueryService;
-import com.ermiyas.exchange.domain.model.Event;
 import com.ermiyas.exchange.domain.exception.ExchangeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class MarketController {
      * Logic: Groups active fixtures by league for the main Dashboard.
      */
     @GetMapping("/leagues")
-    public ResponseEntity<Map<String, List<Event>>> getMarketsByLeague() {
+    public ResponseEntity<Map<String, List<ExchangeDtos.EventSummaryResponse>>> getMarketsByLeague() {
         return ResponseEntity.ok(marketQueryService.getEventsByLeague());
     }
 

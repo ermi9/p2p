@@ -7,6 +7,7 @@ import jakarta.persistence.Embeddable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 
 @Embeddable
@@ -42,7 +43,7 @@ public final class Money implements Comparable<Money> {
             throw new RuntimeException("System Integrity Error: Zero cannot be negative");
         }
     }
-
+    @JsonCreator
     public static Money of(BigDecimal value) throws IllegalBetException { 
         return new Money(value); 
     }

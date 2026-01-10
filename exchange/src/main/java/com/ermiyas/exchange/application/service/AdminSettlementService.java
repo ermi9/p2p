@@ -8,24 +8,25 @@ import com.ermiyas.exchange.domain.repository.bet.BetRepository;
 import com.ermiyas.exchange.domain.repository.offer.OfferRepository;
 import com.ermiyas.exchange.domain.repository.wallet.WalletRepository;
 import com.ermiyas.exchange.domain.logic.SettlementStrategy;
-import com.ermiyas.exchange.domain.logic.SettlementStrategyFactory; // Our new OCP bridge
+import com.ermiyas.exchange.domain.logic.SettlementStrategyFactory;
 import com.ermiyas.exchange.domain.vo.CommissionPolicy;
-import com.ermiyas.exchange.domain.vo.StandardPercentagePolicy;
 import com.ermiyas.exchange.domain.exception.ExchangeException;
 import com.ermiyas.exchange.domain.exception.IllegalBetException;
-import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider; 
+import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider;
+import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider.SportRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
- * PURE OOP: Admin Orchestration Service.
- * This is now fully OCP compliant. It doesn't know any specific betting rules;
- * it just coordinates the flow between the API, the Factory, and the Domain.
+ * REFACTORED: AdminSettlementService (OCP Friendly)
+ * * This service is now closed for modification.
+ * * It uses the Strategy Factory for rules and SportRequest for data.
+ * * No lambda expressions or streams are used.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,80 +37,77 @@ public class AdminSettlementService {
     private final OfferRepository offerRepository;
     private final WalletRepository walletRepository;
     private final SportsDataProvider sportsDataProvider;
-    private final SettlementStrategyFactory strategyFactory; // No more hardcoding!
+    private final SettlementStrategyFactory strategyFactory;
+    private final CommissionPolicy defaultPolicy; // Injected to follow OCP
 
-    /**
-     * Logic: Entry point for Admin settlement.
-     * Transactional so that if one payout fails, everything rolls back to keep the money safe.
-     */
     @Transactional(rollbackFor = Exception.class)
     public void settleMarketResults(AdminUser admin, List<String> externalIds) throws ExchangeException {
         validateAdmin(admin);
 
-        for (String extId : externalIds) {
+        for (int i = 0; i < externalIds.size(); i++) {
+            String extId = externalIds.get(i);
             try {
                 processEventSettlement(extId);
             } catch (Exception e) {
-                // Robustness: If one match score is missing or buggy, 
-                // we don't stop the settlement for other matches.
+                // Robustness: Continue with next event if one fails
             }
         }
     }
 
     private void processEventSettlement(String externalId) throws ExchangeException {
-        // Safe Handling: Grab the event from the repo
-        Event event = eventRepository.getByExternalId(externalId)
-                .orElseThrow(() -> new IllegalBetException("Target event not found: " + externalId));
+        // Safe Handling: Replaced lambda orElseThrow with traditional check
+        Optional<Event> eventOpt = eventRepository.getByExternalId(externalId);
+        if (!eventOpt.isPresent()) {
+            throw new IllegalBetException("Target event not found: " + externalId);
+        }
+        Event event = eventOpt.get();
 
-        if (event.getStatus() != EventStatus.OPEN) return;
+        if (event.getStatus() != EventStatus.OPEN) {
+            return;
+        }
 
-        // 1. Fetch scores as an array (Home vs Away)
-        Map<String, Integer[]> leagueScores = sportsDataProvider.fetchScores(externalId);
+        // 
+        SportRequest request = new SportRequest(event.getLeague(), event.getMarketType());
+        Map<String, Integer[]> leagueScores = sportsDataProvider.fetchScores(request);
         Integer[] scores = leagueScores.get(externalId);
         
         if (scores == null) {
             throw new IllegalBetException("External API Error: No score found for " + externalId);
         }
         
-        // 2. TRUE OCP: Instead of 'new ThreeWaySettlementStrategy()', we ask the factory.
-        // The Factory looks at event.getMarketType() and gives us the right logic.
+        // OCP: Ask the Factory for the strategy
         SettlementStrategy strategy = strategyFactory.getStrategy(event.getMarketType());
         
-        // The Event class uses the strategy to determine the Outcome (HOME_WIN, etc.)
+        // Delegate result processing to the domain entity
         event.processResult(scores[0], scores[1], strategy);
 
-        // 3. Payout Logic
-        CommissionPolicy policy = new StandardPercentagePolicy(new BigDecimal("0.05"));
-        resolveAllBets(event, policy);
+        // 3. Payout Logic: Uses injected policy instead of hardcoded 0.05
+        resolveAllBets(event, defaultPolicy);
 
-        // 4. Finalize the Market
+        // 4. Finalize
         cleanupUnmatchedOffers(event);
         event.markAsSettled();
         eventRepository.save(event);
     }
 
-    /**
-     * Logic: Tells all matched bets to settle themselves based on the event result.
-     */
     private void resolveAllBets(Event event, CommissionPolicy policy) throws ExchangeException {
         List<Bet> bets = betRepository.findAllByOfferEventId(event.getId());
-        for (Bet bet : bets) {
-            // Bet handles its own Win/Loss logic internally
+        for (int i = 0; i < bets.size(); i++) {
+            Bet bet = bets.get(i);
             bet.resolve(event.getResult(), policy);
             betRepository.save(bet);
         }
     }
 
-    /**
-     * Logic: Returns money to makers whose offers weren't fully taken.
-     */
     private void cleanupUnmatchedOffers(Event event) throws ExchangeException {
-        for (Offer offer : event.getOffers()) {
+        List<Offer> offers = event.getOffers();
+        for (int i = 0; i < offers.size(); i++) {
+            Offer offer = offers.get(i);
             if (offer.getStatus() == OfferStatus.OPEN || offer.getStatus() == OfferStatus.PARTIALLY_TAKEN) {
                 offer.cancel();
                 
-                // Integrity Check: Only players (StandardUsers) have wallets
-                if (offer.getMaker() instanceof StandardUser player) {
+                if (offer.getMaker() instanceof StandardUser) {
+                    StandardUser player = (StandardUser) offer.getMaker();
                     player.getWallet().unreserve(offer.getRemainingStake());
                     walletRepository.save(player.getWallet());
                 } else {
@@ -121,9 +119,10 @@ public class AdminSettlementService {
         }
     }
 
-    private void validateAdmin(AdminUser admin) throws ExchangeException {
+    private void validateAdmin(AdminUser admin) {
         if (admin == null) {
-            throw new IllegalBetException("Security Violation: Unauthorized admin access detected.");
+            // Replaced IllegalAccessError with a runtime exception to avoid linkage issues
+            throw new SecurityException("Security Violation: Unauthorized admin access detected.");
         }
     }
 }

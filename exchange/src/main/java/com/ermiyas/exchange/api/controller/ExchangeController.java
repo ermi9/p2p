@@ -30,32 +30,30 @@ public class ExchangeController {
      * MAKER ACTION: Create a new offer.
      */
     @PostMapping("/offers")
-    public ResponseEntity<Long> createOffer(
-            @RequestBody CreateOfferRequest request, 
-            @RequestHeader("X-User-Id") Long userId) throws ExchangeException {
-        
-        Long id = offerService.createOffer(
-            request.getEventId(), 
-            userId, 
-            request.getOutcome(), 
-            Odds.of(request.getOdds()), //
-            Money.of(request.getStake().toString())// 
-        );
-        return ResponseEntity.ok(id);
-    }
+        public ResponseEntity<Long> createOffer(@RequestBody CreateOfferRequest request) throws ExchangeException {
+            Long id = offerService.createOffer(
+                request.getEventId(), 
+                request.getMakerId(), 
+                request.getOutcome(), 
+                Odds.of(request.getOdds()), 
+                Money.of(request.getStake()) 
+            );
+            return ResponseEntity.ok(id);
+        }
 
     /**
      * TAKER ACTION: Match an existing offer.
      */
     @PostMapping("/trades/match")
-    public ResponseEntity<String> matchTrade(
-            @RequestBody MatchBetRequest request, 
-            @RequestHeader("X-User-Id") Long userId) throws ExchangeException {
-        
-        tradeService.matchBet(request.getOfferId(), userId, Money.of(request.getAmountToMatch().toString()));
+    public ResponseEntity<String> matchTrade(@RequestBody MatchBetRequest request) throws ExchangeException {
+        // Use request.getTakerId() instead of the @RequestHeader
+        tradeService.matchBet(
+            request.getOfferId(), 
+            request.getTakerId(), 
+            Money.of(request.getAmountToMatch())
+        );
         return ResponseEntity.ok("Trade matched successfully.");
     }
-
     @DeleteMapping("/offers/{offerId}")
     public ResponseEntity<Void> cancelOffer(
             @PathVariable Long offerId, 

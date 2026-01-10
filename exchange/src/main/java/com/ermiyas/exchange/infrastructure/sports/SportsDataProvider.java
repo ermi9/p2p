@@ -1,9 +1,10 @@
 package com.ermiyas.exchange.infrastructure.sports;
 
 import com.ermiyas.exchange.domain.model.Event;
-import com.ermiyas.exchange.domain.model.League; // Assuming this location
-import com.ermiyas.exchange.domain.model.MarketType; // Assuming this location
+import com.ermiyas.exchange.domain.model.League;
+import com.ermiyas.exchange.domain.model.MarketType;
 import com.ermiyas.exchange.domain.vo.Odds;
+
 import java.util.List;
 import java.util.Map;
 
@@ -12,27 +13,18 @@ import java.util.Map;
  */
 public interface SportsDataProvider {
 
-    /**
-     * Requirement: Check if the provider (e.g., TheOddsApi) supports 
-     * the specific league or market requested.
-     */
     boolean supports(SportRequest request);
 
-    /**
-     * Requirement: Fetch Upcoming Fixtures.
-     */
     List<Event> fetchUpcomingFixtures(SportRequest request);
 
-    /**
-     * Requirement: Fetch Best Odds.
-     */
     Map<String, List<Odds>> fetchBestOdds(SportRequest request);
 
     /**
-     * Requirement: Fetch Scores for Admin review.
+     * NEW: Fetch Best Odds along with the Brand Name of the provider.
      */
-    Map<String, Integer[]> fetchScores(SportRequest request);
+    Map<String, BestOddsResult> fetchBestOddsWithSources(SportRequest request);
 
+    Map<String, Integer[]> fetchScores(SportRequest request);
 
     public static class SportRequest {
         private final League league;

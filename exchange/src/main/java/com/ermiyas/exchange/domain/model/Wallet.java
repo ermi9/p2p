@@ -88,6 +88,19 @@ public class Wallet {
         this.totalBalance = this.totalBalance.plus(amount);
     }
 
+    public void withdraw(Money amount) throws ExchangeException {
+        if (amount.isZero() || amount.isNegative()) {
+            throw new IllegalArgumentException("Withdrawal amount must be positive");
+        }
+        
+        // Safety check: Users can only withdraw what isn't currently reserved for bets/offers
+        if (amount.isGreaterThan(availableBalance())) {
+            throw new InsufficientFundsException("Withdrawal failed: " + amount + " exceeds available balance.");
+        }
+        
+        this.totalBalance = this.totalBalance.minus(amount);
+    }
+
 
     public void unreserve(Money amount) throws ExchangeException {
         validateReservation(amount);

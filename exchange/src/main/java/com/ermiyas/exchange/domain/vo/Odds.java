@@ -5,7 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.math.BigDecimal;
 import java.util.Objects;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 @Embeddable
 public final class Odds {
@@ -20,7 +20,8 @@ public final class Odds {
         validate(value);
         this.value = value;
     }
-
+    
+    @JsonCreator
     public static Odds of(BigDecimal value) { return new Odds(value); }
     
     public static Odds of(double value) { return new Odds(BigDecimal.valueOf(value)); }

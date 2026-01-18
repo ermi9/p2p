@@ -18,7 +18,7 @@ async function loadData() {
 
     document.getElementById('match-title').innerHTML = MatchHeader(data, leagueName);
     
-    // FIX: Restored structured HTML for Reference Odds to fix the "messed up" UI
+//refernence odds
     document.getElementById('reference-odds-container').innerHTML = [
         { l: '1', v: data.homeOdds, s: data.homeSource },
         { l: 'X', v: data.drawOdds, s: data.drawSource },
@@ -46,7 +46,7 @@ const toggle = (id, s) => {
     document.getElementById(`stake-entry-${id}`).style.display = s ? 'block' : 'none';
 };
 
-// FIX: Changed quotes to backticks for proper ID interpolation
+
 window.cancelOffer = async (id) => {
     if (confirm("Cancel this offer?")) {
         const res = await api.delete(`/exchange/offers/${id}`);

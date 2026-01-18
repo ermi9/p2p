@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile | FairPlay P2P</title>
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body class="profile-layout">
+
+    <aside class="sidebar">
+        <h2 class="logo">FairPlay</h2>
+        <nav>
+            <a href="markets.html">Live Markets</a>
+            <a href="active-bets.html">My Active Bets</a>
+            <a href="wallets.html">Wallet</a>
+            <a href="profile.html" class="active-link">Profile</a>
+            <hr>
+            <a href="login.html" class="logout-link">Logout</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h1>Account Settings</h1>
+            <p>Manage your personal profile and security preferences.</p>
+        </header>
+
+        <div class="profile-grid">
+            
+            <section class="profile-card">
+                <h3>Personal Information</h3>
+                <form>
+                    <div class="input-group">
+                        <label>Username</label>
+                        <input type="text" value="Ermiyas_Trader" disabled class="disabled-input">
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" value="ermiyas@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" placeholder="Your Name">
+                    </div>
+                    <button type="submit" class="btn-gold">Save Changes</button>
+                </form>
+            </section>
+
+            <div class="secondary-column">
+                <section class="profile-card">
+                    <h3>Security</h3>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <input type="password" placeholder="••••••••">
+                    </div>
+                    <button class="btn-outline">Update Password</button>
+                </section>
+
+                <section class="profile-card stats-card">
+                    <h3>Trading Stats</h3>
+                    <div class="stat-row">
+                        <span>Win Rate:</span>
+                        <span class="green-text">64%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Total Bets:</span>
+                        <span>128</span>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </main>
+</body>
+</html>

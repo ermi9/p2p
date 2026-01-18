@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel | FairPlay</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-page">
+
+    <main class="admin-container">
+        <header class="admin-header">
+            <h1>Platform Overview</h1>
+            <button class="btn-sync">Sync External Fixtures</button>
+        </header>
+
+        <section class="stats-bar">
+            <div class="stat-box">
+                <label>Total Users</label>
+                <h2>1,248</h2>
+            </div>
+            <div class="stat-box">
+                <label>Active Fixtures</label>
+                <h2>42</h2>
+            </div>
+            <div class="stat-box highlight">
+                <label>Locked Stake (Escrow)</label>
+                <h2>$12,450.00</h2>
+            </div>
+        </section>
+
+        <section class="admin-section">
+            <h3>Registered Users</h3>
+            <div class="admin-list">
+                <div class="list-item">
+                    <p><strong>@Ermiyas</strong> (ermiyas@example.com)</p>
+                    <button class="btn-danger">Remove</button>
+                </div>
+                <div class="list-item">
+                    <p><strong>@SharkTrader</strong> (shark@trade.com)</p>
+                    <button class="btn-danger">Remove</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="admin-section">
+            <h3>Fixture Settlement</h3>
+            <div class="admin-list">
+                <div class="list-item">
+                    <div>
+                        <p><strong>Arsenal vs Liverpool</strong></p>
+                        <span class="sub-id">ID: ARS-LIV-2024</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-settle">Settle Result</button>
+                        <button class="btn-void">Void</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

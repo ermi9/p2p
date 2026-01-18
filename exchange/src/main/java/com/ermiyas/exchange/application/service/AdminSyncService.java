@@ -104,7 +104,7 @@ public class AdminSyncService {
                 
                 if (scores != null && scores.length >= 2) {
                     try {
-                        // FIX: Call processResult instead of determineWinner
+                        // Call processResult instead of determineWinner
                         // and pass the settlementStrategy
                         event.processResult(scores[0], scores[1], settlementStrategy);
                         eventRepository.save(event);

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Center | FairPlay P2P</title>
+    <link rel="stylesheet" href="css/trading.css">
+</head>
+<body class="trading-page">
+
+    <input type="checkbox" id="post-offer-toggle" class="modal-checkbox">
+
+    <aside class="sidebar">
+        <h2 class="logo">FairPlay</h2>
+        <nav>
+            <a href="markets.html" class="back-btn">← Back to Fixtures</a>
+            <hr>
+            <a href="active-bets.html">My Active Bets</a>
+            <a href="wallet.html">Wallet</a>
+        </nav>
+    </aside>
+
+    <main class="trading-content">
+        
+        <header class="market-header">
+            <div class="match-info">
+                <h1>Napoli vs Parma</h1>
+                <p class="start-time">Kick-off: 18:30</p>
+            </div>
+
+            <div class="bookie-ref-box">
+                <p class="ref-title">Best Bookmaker Deals</p>
+                <div class="ref-odds-grid">
+                    
+                    <div class="ref-odd-card">
+                        <span class="position-label">1 (HOME)</span>
+                        <div class="bookie-info">
+                            <img src="bet365-logo.png" class="bookie-logo" alt="Logo">
+                            <p>Bet365</p>
+                        </div>
+                        <strong class="best-value">2.15</strong>
+                    </div>
+
+                    <div class="ref-odd-card">
+                        <span class="position-label">X (DRAW)</span>
+                        <div class="bookie-info">
+                            <img src="pinnacle-logo.png" class="bookie-logo" alt="Logo">
+                            <p>Pinnacle</p>
+                        </div>
+                        <strong class="best-value">3.60</strong>
+                    </div>
+
+                    <div class="ref-odd-card">
+                        <span class="position-label">2 (AWAY)</span>
+                        <div class="bookie-info">
+                            <img src="betfair-logo.png" class="bookie-logo" alt="Logo">
+                            <p>Betfair</p>
+                        </div>
+                        <strong class="best-value">3.30</strong>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <section class="offers-section">
+            <div class="offers-top">
+                <h2>Peer-to-Peer Marketplace</h2>
+                <label for="post-offer-toggle" class="btn-create">+ Post New Offer</label>
+            </div>
+
+            <div class="offers-grid">
+                <div class="offer-card">
+                    <div class="card-header">
+                        <span class="user-tag">@SharkTrader</span>
+                        <span class="odds-badge">@ 2.20</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="bet-on">Backing: <strong>Napoli</strong></p>
+                        <div class="liquidity-bar">
+                            <label>Available Liquidity</label>
+                            <div class="amount">$250.00</div>
+                        </div>
+                    </div>
+                    <div class="card-action">
+                        <input type="number" placeholder="Stake ($)" class="stake-input">
+                        <button class="btn-match">Match</button>
+                    </div>
+                </div>
+
+                <div class="offer-card">
+                    <div class="card-header">
+                        <span class="user-tag">@ValueBettor</span>
+                        <span class="odds-badge">@ 3.75</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="bet-on">Backing: <strong>Draw</strong></p>
+                        <div class="liquidity-bar">
+                            <label>Available Liquidity</label>
+                            <div class="amount">$100.00</div>
+                        </div>
+                    </div>
+                    <div class="card-action">
+                        <input type="number" placeholder="Stake ($)" class="stake-input">
+                        <button class="btn-match">Match</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Post Your Offer</h2>
+                <label for="post-offer-toggle" class="close-btn">&times;</label>
+            </div>
+            <form class="modal-form">
+                <div class="input-group">
+                    <label>Selection</label>
+                    <select>
+                        <option>Napoli (Home)</option>
+                        <option>Draw (X)</option>
+                        <option>Parma (Away)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Your Odds</label>
+                    <input type="number" step="0.01" placeholder="2.25">
+                </div>
+                <div class="input-group">
+                    <label>Liquidity Amount ($)</label>
+                    <input type="number" placeholder="100.00">
+                </div>
+                <button type="submit" class="btn-gold-full">Confirm Post</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

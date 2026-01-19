@@ -30,4 +30,8 @@ public class EventRepositoryImpl implements EventRepository {
     public long count(){
         return jpaEventRepository.count();
     }
+     @Override
+    public void deleteById(Long id){
+         jpaEventRepository.deleteById(id);
+    }
 }

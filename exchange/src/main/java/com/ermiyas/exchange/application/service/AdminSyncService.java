@@ -9,8 +9,8 @@ import com.ermiyas.exchange.infrastructure.sports.BestOddsResult;
 import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider;
 import com.ermiyas.exchange.infrastructure.sports.SportsDataProvider.SportRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +24,16 @@ public class AdminSyncService {
     private final List<SportsDataProvider> providers;
     private final SettlementStrategy settlementStrategy;
 
-    @Transactional
+    public long getActiveFixtureCount() {
+        return eventRepository.count();
+    }
+
+    /**
+     * Refactored Sync Loop: 
+     *  Removed @Transactional to allow individual league commits and avoid long-held DB locks.
+     * Added try-catch and Thread.sleep to handle and prevent API rate limits (429 errors).
+     */
+    @Scheduled(fixedRate = 10800000) // 3 Hours
     public void syncAllFixtures() {
         League[] leagues = League.values();
         for (int i = 0; i < leagues.length; i++) {
@@ -34,14 +43,32 @@ public class AdminSyncService {
             for (int j = 0; j < providers.size(); j++) {
                 SportsDataProvider provider = providers.get(j);
                 if (provider.supports(request)) {
-                    // LOGGING: Check which provider is running
-                    System.out.println("SYNC: Starting sync for league " + league + " using provider " + provider.getClass().getSimpleName());
-                    
-                    syncLeagueFixtures(provider, request);
-                    syncLeagueOdds(provider, request); 
-                    syncLeagueScores(provider, request);
+                    try {
+                        // Spacing out requests to avoid "Too Many Requests" (429) errors
+                        syncLeagueFixtures(provider, request);
+                        pause(); 
+                        
+                        syncLeagueOdds(provider, request);
+                        pause();
+                        
+                        syncLeagueScores(provider, request);
+                        pause();
+                        
+                    } catch (Exception e) {
+                        // Log error but continue with the next league/provider
+                        System.err.println("Sync failed for league " + league + " using " + provider.getClass().getSimpleName() + ": " + e.getMessage());
+                    }
                 }
             }
+        }
+    }
+
+    private void pause() {
+        try {
+            // 1-second delay between API calls to stay within frequency limits
+            Thread.sleep(1000); 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -56,37 +83,19 @@ public class AdminSyncService {
         }
     }
 
-    /**
-     * Standard Java implementation of odds synchronization.
-     */
     private void syncLeagueOdds(SportsDataProvider provider, SportRequest request) {
         Map<String, BestOddsResult> oddsResultMap = provider.fetchBestOddsWithSources(request);
-        
-        // LOGGING: Confirm if the infrastructure actually returned data
-        System.out.println("DEBUG: Odds map size for " + request.getLeague() + ": " + oddsResultMap.size());
-
         for (Map.Entry<String, BestOddsResult> entry : oddsResultMap.entrySet()) {
             Optional<Event> eventOpt = eventRepository.getByExternalId(entry.getKey());
-            
             if (eventOpt.isPresent()) {
                 Event event = eventOpt.get();
                 BestOddsResult result = entry.getValue();
-                
-                // LOGGING: Verify source is not null before saving
-                if (result.getHomeSource() == null) {
-                    System.out.println("WARNING: Provider returned NULL source for event ID: " + entry.getKey());
-                }
-
-                // Set Odds
                 event.setRefHomeOdds(result.getHomeOdds());
                 event.setRefAwayOdds(result.getAwayOdds());
                 event.setRefDrawOdds(result.getDrawOdds());
-
-                // Set Sources
                 event.setRefHomeSource(result.getHomeSource());
                 event.setRefAwaySource(result.getAwaySource());
                 event.setRefDrawSource(result.getDrawSource());
-
                 eventRepository.save(event);
             }
         }
@@ -94,22 +103,18 @@ public class AdminSyncService {
 
     private void syncLeagueScores(SportsDataProvider provider, SportRequest request) {
         Map<String, Integer[]> scoreMap = provider.fetchScores(request);
-        
         for (Map.Entry<String, Integer[]> entry : scoreMap.entrySet()) {
             Optional<Event> eventOpt = eventRepository.getByExternalId(entry.getKey());
-            
             if (eventOpt.isPresent()) {
                 Event event = eventOpt.get();
                 Integer[] scores = entry.getValue();
-                
                 if (scores != null && scores.length >= 2) {
                     try {
-                        // Call processResult instead of determineWinner
-                        // and pass the settlementStrategy
+                        // Triggers transition to COMPLETED state
                         event.processResult(scores[0], scores[1], settlementStrategy);
                         eventRepository.save(event);
                     } catch (Exception e) {
-                        System.err.println("Failed to process result for event " + event.getId() + ": " + e.getMessage());
+                        System.err.println("Failed to process background result for event: " + event.getId());
                     }
                 }
             }

@@ -55,7 +55,7 @@ Wallets use a reservation system. When you place a bet, your money isn't "gone"�
 ├── src/main/resources/         # Configuration properties
 ├── pom.xml                     # Maven build configuration
 └── README.md                   # Project documentation
-
+```
 ## 🚧 Current Status: "Not Perfect Yet"
 This project is an evolving learning vehicle and is not yet production-ready.
 

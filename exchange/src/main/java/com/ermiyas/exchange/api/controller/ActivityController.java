@@ -6,7 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-@CrossOrigin(origins = "http://127.0.0.1:5500")
+
+//@CrossOrigin(origins = "http://127.0.0.1:5501")
 @RestController
 @RequestMapping("/api/v1/activity")
 @RequiredArgsConstructor
@@ -16,6 +17,8 @@ public class ActivityController {
 
     @GetMapping("/summary")
     public ResponseEntity<Map<String, Object>> getMyActivity(@RequestHeader("X-User-Id") Long userId) {
+        System.out.println("Activity Request for User: " + userId);
+        
         return ResponseEntity.ok(Map.of(
             "openOffers", queryService.getUserOpenOffers(userId),
             "matchedBets", queryService.getUserMatchedBets(userId)

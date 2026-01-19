@@ -5,19 +5,14 @@ import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.vo.Odds;
 import com.ermiyas.exchange.domain.exception.ExchangeException;
 import com.ermiyas.exchange.domain.exception.IllegalBetException;
-
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Offer Entity.
- * Demonstrates Strict Encapsulation, State Management, and Robust Exception Handling.
- */
 @Entity
 @Table(name = "offers")
 @Getter
@@ -36,12 +31,13 @@ public class Offer {
     @Setter(AccessLevel.NONE) 
     private User maker; 
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "event_id")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIncludeProperties({"id", "homeTeam", "awayTeam", "startTime"})
     private Event event;
 
     @Enumerated(EnumType.STRING)
+    @JsonProperty("predictedOutcome")
     private Outcome predictedOutcome;
 
     @Embedded
@@ -61,22 +57,32 @@ public class Offer {
 
     @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Bet> bets = new ArrayList<>();
 
-
-
+    /**
+     * Refactored- Orchestrates the partial or full matching of an offer.
+     * Calculates the Taker's liability based on the portion of the Maker's stake being matched.
+     */
     public Bet fill(Money makerStakeToMatch, User taker, String reference) throws ExchangeException {
+        // 1. Detailed validation before any state changes
         validateFillable(makerStakeToMatch);
-
+        
+        // 2. Calculate what the Taker must risk (Liability) to match this stake
         Money takerLiability = odds.calculateLiability(makerStakeToMatch);
-
+        
         try {
+            // 3. Deduct from the liquidity pool
             this.remainingStake = this.remainingStake.minus(makerStakeToMatch);
         } catch (IllegalBetException e) {
-            throw new IllegalBetException("Something went wrong");        }
+            // This would only trigger if validation failed or concurrent modification occurred
+            throw new IllegalBetException("Integrity Error: Could not deduct " + makerStakeToMatch + " from available " + remainingStake);
+        }
         
+        // 4. Update the Offer's status (OPEN -> PARTIALLY_TAKEN -> TAKEN)
         this.updateStatusAfterFill();
-
+        
+        // 5. Build the resulting Matched Bet contract
         Bet bet = Bet.builder()
                 .offer(this)
                 .taker(taker)
@@ -86,40 +92,43 @@ public class Offer {
                 .reference(reference)
                 .status(BetStatus.MATCHED)
                 .build();
-
+        
         this.bets.add(bet);
         return bet;
     }
 
-    /**
-     * Cancels the offer if it hasn't been fully taken.
-     * Uses custom IllegalBetException instead of generic IllegalStateException.
-     */
     public void cancel() throws IllegalBetException {
         if (this.status == OfferStatus.TAKEN) {
-            throw new IllegalBetException("Cannot cancel an offer that is already fully taken.");
+            throw new IllegalBetException("Cancellation Failed: This offer has already been fully matched by other users.");
         }
         this.status = OfferStatus.CANCELLED;
     }
 
-
+    /**
+     * Refactored- Provides clear, actionable error messages for the UI.
+     */
     private void validateFillable(Money amount) throws IllegalBetException {
-        Objects.requireNonNull(amount, "Matched stake cannot be null");
+        Objects.requireNonNull(amount, "System Error: Matched stake amount cannot be null.");
         
         if (this.status == OfferStatus.CANCELLED) {
-            throw new IllegalBetException("Cannot fill a cancelled offer.");
+            throw new IllegalBetException("Trade Failed: This offer was cancelled by the maker and is no longer active.");
+        }
+        
+        if (this.status == OfferStatus.TAKEN) {
+            throw new IllegalBetException("Trade Failed: This offer has already been fully matched by another user.");
         }
 
         if (amount.isGreaterThan(remainingStake)) {
-            throw new IllegalBetException("Requested match amount " + amount + " exceeds available stake " + remainingStake);
+            //  Descriptive message to solve the "inaccurate error" issue in the UI
+            throw new IllegalBetException(String.format(
+                "Trade Failed: Requested match of $%s exceeds the remaining available stake of $%s.",
+                amount.value(), 
+                remainingStake.value()
+            ));
         }
     }
 
     private void updateStatusAfterFill() {
-        if (this.remainingStake.isZero()) {
-            this.status = OfferStatus.TAKEN;
-        } else {
-            this.status = OfferStatus.PARTIALLY_TAKEN;
-        }
+        this.status = this.remainingStake.isZero() ? OfferStatus.TAKEN : OfferStatus.PARTIALLY_TAKEN;
     }
 }

@@ -28,4 +28,8 @@ public class OfferRepositoryImpl implements OfferRepository {
     public long count(){
         return jpaOfferRepository.count();
     }
+     @Override
+    public void deleteById(Long id){
+         jpaOfferRepository.deleteById(id);
+    }
 }

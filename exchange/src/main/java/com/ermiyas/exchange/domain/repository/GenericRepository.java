@@ -12,4 +12,5 @@ public interface GenericRepository<T, ID> {
     Optional<T> findById(ID id);
     List<T> findAll();
     long count();
+    void deleteById(ID id);
 }

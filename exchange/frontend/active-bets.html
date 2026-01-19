@@ -3,93 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <title>Active Bets | FairPlay P2P</title>
-    <link rel="stylesheet" href="css/active-bets.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
 </head>
-<body class="dashboard-layout">
+<body class="app-layout">
 
     <aside class="sidebar">
         <h2 class="logo">FairPlay</h2>
         <nav>
             <a href="markets.html">Live Markets</a>
-            <a href="active-bets.html" class="active-link">My Active Bets</a>
-            <a href="wallets.html">Wallet</a>
-            <a href="profile.html">Profile</a>
+            <a href="active-bets.html" class="active">My Active Bets</a>
+            <a href="wallets.html">Wallet & Deposits</a>
+            <a href="profile.html">My Profile</a>
             <hr>
-            <a href="login.html" class="logout-link">Logout</a>
+            <a href="login.html" id="logout-btn">Logout</a>
         </nav>
     </aside>
 
     <main class="main-content">
         <header class="page-header">
             <h1>My Active Bets</h1>
-            <p>Track your open offers and matched live bets.</p>
+            <p class="text-muted">Track your open offers and matched live bets.</p>
         </header>
 
-        <section class="bet-section">
-            <h3 class="section-title">Unmatched Offers (Waiting)</h3>
-            <div class="bet-list">
-                
-                <div class="bet-card unmatched">
-                    <div class="bet-header">
-                        <span class="market-tag">NAPOLI (HOME)</span>
-                        <span class="status-tag">Waiting for Peer</span>
-                    </div>
-                    <div class="bet-body">
-                        <h4>Napoli vs Parma</h4>
-                        <div class="bet-details">
-                            <div class="detail-item">
-                                <label>Odds</label>
-                                <p>2.25</p>
-                            </div>
-                            <div class="detail-item">
-                                <label>Stake</label>
-                                <p>$50.00</p>
-                            </div>
-                            <div class="detail-item">
-                                <label>To Win</label>
-                                <p>$62.50</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bet-footer">
-                        <button class="btn-cancel">Cancel Offer</button>
-                    </div>
-                </div>
-
+        <section style="margin-bottom: 40px;">
+            <h3 class="text-gold" style="margin-bottom: 20px; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">Unmatched Offers (Waiting)</h3>
+            
+            <div id="unmatched-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <div class="text-muted" style="padding: 20px;">Loading open offers...</div>
             </div>
         </section>
 
-        <section class="bet-section">
-            <h3 class="section-title">Matched Bets (Live)</h3>
-            <div class="bet-list">
-                
-                <div class="bet-card matched">
-                    <div class="bet-header">
-                        <span class="market-tag">DRAW (X)</span>
-                        <span class="status-tag live">LIVE - 72'</span>
-                    </div>
-                    <div class="bet-body">
-                        <h4>Arsenal vs Man City</h4>
-                        <div class="bet-details">
-                            <div class="detail-item">
-                                <label>Odds</label>
-                                <p>3.60</p>
-                            </div>
-                            <div class="detail-item">
-                                <label>Stake</label>
-                                <p>$100.00</p>
-                            </div>
-                            <div class="detail-item">
-                                <label>Potential Return</label>
-                                <p>$360.00</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+        <section>
+            <h3 class="text-success" style="margin-bottom: 20px; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">Matched Bets (Live)</h3>
+            
+            <div id="matched-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <div class="text-muted" style="padding: 20px;">Loading matched trades...</div>
             </div>
         </section>
     </main>
+
+    <script src="js/auth-guard.js"></script>
+    <script type="module" src="js/active-bets.js"></script>
 
 </body>
 </html>

@@ -3,68 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <title>My Wallet | FairPlay P2P</title>
-    <link rel="stylesheet" href="css/wallets.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
 </head>
-<body class="wallet-layout">
+<body class="app-layout">
 
     <aside class="sidebar">
-        <h2 class="logo-text">FairPlay</h2>
-        <nav class="nav-links">
+        <h2 class="logo">FairPlay</h2>
+        <nav>
             <a href="markets.html">Live Markets</a>
             <a href="active-bets.html">My Active Bets</a>
-            <a href="wallet.html" class="active-link">Wallet</a>
-            <a href="profile.html">Profile</a>
-            <div class="divider"></div>
-            <a href="landing.html" class="logout-link">Logout</a>
+            <a href="wallets.html" class="active">Wallet & Deposits</a>
+            <a href="profile.html">My Profile</a>
+            <hr>
+            <a href="login.html" id="logout-btn">Logout</a>
         </nav>
     </aside>
 
     <main class="main-content">
         <header class="page-header">
             <h1>My Wallet</h1>
-            <p>Manage your funds and view transaction history.</p>
+            <p class="text-muted">Manage your funds and view transaction history.</p>
         </header>
 
-        <section class="balance-card">
-            <p class="balance-label">Total Available Balance</p>
-            <h2 class="balance-amount">$<span id="balance-value">500.00</span></h2>
+        <section class="card" style="margin-bottom: 40px; text-align: center; padding: 40px;">
+            <p class="text-muted" style="text-transform: uppercase; font-size: 12px; letter-spacing: 1px; margin-bottom: 10px;">Total Available Balance</p>
+            <h2 style="font-size: 48px; margin-bottom: 10px;">$<span id="available-balance">0.00</span></h2>
             
-            <div class="action-buttons">
-                <button class="btn-gold">Deposit Funds</button>
-                <button class="btn-outline">Withdraw</button>
+            <p class="text-muted" style="font-size: 14px; margin-bottom: 30px;">
+                Reserved in Active Offers: <span id="reserved-balance" class="text-gold">$0.00</span>
+            </p>
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="deposit-btn" class="btn btn-gold">Deposit Funds</button>
+                <button id="withdraw-btn" class="btn btn-outline">Withdraw</button>
             </div>
         </section>
 
-        <section class="transactions-section">
-            <h3>Recent Transactions</h3>
+        <section>
+            <h3 style="margin-bottom: 20px; font-size: 20px;">Recent Activity</h3>
             
-            <div class="transaction-list">
-                <div class="transaction-item">
-                    <div class="details">
-                        <p class="transaction-title">Bet Won: Napoli vs Parma</p>
-                        <p class="transaction-date">Jan 14, 2026 • 20:45</p>
-                    </div>
-                    <div class="amount positive">+$107.50</div>
-                </div>
-
-                <div class="transaction-item">
-                    <div class="details">
-                        <p class="transaction-title">Deposit (Credit Card)</p>
-                        <p class="transaction-date">Jan 12, 2026 • 14:20</p>
-                    </div>
-                    <div class="amount positive">+$200.00</div>
-                </div>
-
-                <div class="transaction-item">
-                    <div class="details">
-                        <p class="transaction-title">Bet Placed: Köln vs Bayern</p>
-                        <p class="transaction-date">Jan 11, 2026 • 18:30</p>
-                    </div>
-                    <div class="amount negative">-$25.00</div>
+            <div id="transaction-list">
+                <div class="text-muted" style="text-align: center; padding: 40px;">
+                    Loading your activity...
                 </div>
             </div>
         </section>
     </main>
 
+    <script src="js/auth-guard.js"></script>
+    <script type="module" src="js/wallets.js"></script>
 </body>
 </html>

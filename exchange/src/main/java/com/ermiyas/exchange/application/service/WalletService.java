@@ -18,8 +18,7 @@ public class WalletService {
     @Transactional(rollbackFor = Exception.class)
     public void deposit(Long userId, Money amount) throws ExchangeException {
         Wallet wallet = walletRepository.getByUserIdWithLock(userId)
-                .orElseThrow(() -> new UserNotFoundException("Deposit Failed: Wallet not found for user ID: " + userId));
-
+                .orElseThrow(() -> new UserNotFoundException("Wallet not found."));
         wallet.deposit(amount);
         walletRepository.save(wallet);
     }
@@ -27,8 +26,7 @@ public class WalletService {
     @Transactional(rollbackFor = Exception.class)
     public void withdraw(Long userId, Money amount) throws ExchangeException {
         Wallet wallet = walletRepository.getByUserIdWithLock(userId)
-                .orElseThrow(() -> new UserNotFoundException("Withdrawal Failed: Wallet not found for user ID: " + userId));
-
+                .orElseThrow(() -> new UserNotFoundException("Wallet not found."));
         wallet.withdraw(amount); 
         walletRepository.save(wallet);
     }
@@ -36,6 +34,6 @@ public class WalletService {
     @Transactional(readOnly = true)
     public Wallet getUserWallet(Long userId) throws ExchangeException {
         return walletRepository.getByUserId(userId)
-                .orElseThrow(() -> new UserNotFoundException("Lookup Failed: Wallet not found for user ID: " + userId));
+                .orElseThrow(() -> new UserNotFoundException("Wallet not found."));
     }
 }

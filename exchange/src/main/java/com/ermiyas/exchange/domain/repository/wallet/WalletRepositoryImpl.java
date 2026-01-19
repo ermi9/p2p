@@ -28,4 +28,8 @@ public class WalletRepositoryImpl implements WalletRepository {
     public long count(){
         return jpaWalletRepository.count();
     }
+    @Override
+    public void deleteById(Long id){
+         jpaWalletRepository.deleteById(id);
+    }
 }

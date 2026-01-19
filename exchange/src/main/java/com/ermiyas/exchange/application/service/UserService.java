@@ -5,6 +5,7 @@ import com.ermiyas.exchange.domain.model.user.StandardUser;
 import com.ermiyas.exchange.domain.model.user.UserFactory;
 import com.ermiyas.exchange.domain.model.Wallet;
 import com.ermiyas.exchange.domain.vo.Money;
+import com.ermiyas.exchange.domain.vo.Password;
 import com.ermiyas.exchange.domain.repository.user.UserRepository;
 import com.ermiyas.exchange.domain.repository.wallet.WalletRepository;
 import com.ermiyas.exchange.domain.exception.ExchangeException;
@@ -25,7 +26,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
 
-
     @Transactional(rollbackFor = Exception.class)
     public User registerStandardUser(String username, String email, String password) throws ExchangeException {
 
@@ -37,7 +37,8 @@ public class UserService {
         // We cast to User because the repository expects the Entity type
         User user = (User) UserFactory.createStandard(username, email, password);
 
-        if (user instanceof StandardUser standardUser) {
+        if (user instanceof StandardUser) {
+            StandardUser standardUser = (StandardUser) user;
             Wallet wallet = new Wallet(standardUser, Money.zero());
             standardUser.setWallet(wallet);
             walletRepository.save(wallet);
@@ -58,5 +59,33 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    @Transactional
+    public void updatePassword(Long userId, String newRawPassword) throws ExchangeException {
+        User user = getUserById(userId);
+        // Promotes raw text to a secure, validated Password VO
+        Password securePassword = Password.create(newRawPassword);
+        // Updates the entity using the interface contract
+        user.updatePassword(securePassword);
+        userRepository.save(user);
+    }
+
+    public User login(String username, String password) throws ExchangeException {
+        //  Find user via Optional check
+        Optional<User> userOpt = userRepository.findByUsername(username);
+
+        if (!userOpt.isPresent()) {
+            throw new UserNotFoundException("Invalid username or password.");
+        }
+
+        User user = userOpt.get();
+
+        // Verify credentials using the Entity's authenticate method
+        if (!user.authenticate(password)) {
+            throw new UserNotFoundException("Invalid username or password.");
+        }
+
+        return user;
     }
 }

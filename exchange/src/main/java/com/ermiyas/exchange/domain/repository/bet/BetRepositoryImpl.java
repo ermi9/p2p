@@ -25,4 +25,8 @@ public class BetRepositoryImpl implements BetRepository {
     public long count(){
         return jpaBetRepository.count();
     }
+     @Override
+    public void deleteById(Long id){
+         jpaBetRepository.deleteById(id);
+    }
 }

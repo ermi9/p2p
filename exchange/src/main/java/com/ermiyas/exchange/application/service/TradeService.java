@@ -13,12 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
- * PURE OOP: Trade Orchestration Service.
- * This service handles the "Matching" logic where a Taker decides to fill a Maker's Offer.
- * It coordinates the exchange between the Offer, the Taker's Wallet, and the final Bet.
+ * Trade Orchestration Service.
+ * Coordinates the matching process between a Taker and an existing Liquidity Offer.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,52 +28,46 @@ public class TradeService {
     private final BetRepository betRepository;
 
     /**
-     * Logic: Matches a Taker to an existing Offer.
-     * Transactional: We use 'findByIdWithLock' to prevent two people from taking 
-     * the same offer at the exact same millisecond (Race Conditions).
-     * * @param offerId The ID of the maker's offer.
-     * @param takerUserId The ID of the user trying to take the bet.
-     * @param makerStakeToMatch How much of the maker's stake the taker wants to cover.
+     * Orchestrates a Peer-to-Peer trade match.
+     * Uses pessimistic locking to prevent race conditions during heavy market activity.
      */
     @Transactional(rollbackFor = Exception.class)
     public void matchBet(Long offerId, Long takerUserId, Money makerStakeToMatch) throws ExchangeException {
         
-        // 1. Fetch the Offer. We use Optional here to avoid NullPointerExceptions.
-        Optional<Offer> offerOpt = offerRepository.findByIdWithLock(offerId);
-        if (!offerOpt.isPresent()) {
-            throw new IllegalBetException("Trade Error: The offer you are looking for (#" + offerId + ") does not exist.");
-        }
-        Offer offer = offerOpt.get();
+        // 1. Fetch and Lock the Offer to ensure no other user matches it simultaneously
+        Offer offer = offerRepository.findByIdWithLock(offerId)
+                .orElseThrow(() -> new IllegalBetException("Trade Error: The offer (#" + offerId + ") is no longer available."));
 
-        // 2. Fetch the Taker's Wallet.
-        Optional<Wallet> walletOpt = walletRepository.getByUserIdWithLock(takerUserId);
-        if (!walletOpt.isPresent()) {
-            throw new SecurityException("Trade Error: We couldn't find a wallet for User ID: " + takerUserId);
+        // 2. Security Check: Prevent Self-Matching (A user cannot match their own offer)
+        if (Objects.equals(offer.getMaker().getId(), takerUserId)) {
+            throw new IllegalBetException("Trade Violation: You cannot match your own offer. This is considered a wash trade.");
         }
-        Wallet takerWallet = walletOpt.get();
 
-        // 3. Safe Type Handling: Admins don't have wallets in our system.
-        // We check if the wallet owner is a StandardUser (a player) before moving forward.
-        if (!(takerWallet.getUser() instanceof StandardUser)) {
-            throw new IllegalBetException("Security Violation: Admins are not allowed to participate in market trades.");
+        // 3. Market State Check: Ensure the event is still taking bets
+        if (offer.getEvent().getStatus() != EventStatus.OPEN) {
+            throw new IllegalBetException("Trade Failed: The market for this event is now " + offer.getEvent().getStatus() + ".");
+        }
+
+        // 4. Fetch and Lock Taker's Wallet
+        Wallet takerWallet = walletRepository.getByUserIdWithLock(takerUserId)
+                .orElseThrow(() -> new SecurityException("Trade Error: Wallet for user #" + takerUserId + " not found."));
+
+        if (!(takerWallet.getUser() instanceof StandardUser taker)) {
+            throw new IllegalBetException("Security Violation: Only player accounts can participate in trades.");
         }
         
-        // Since we confirmed it's a StandardUser, we cast it for the domain call.
-        StandardUser taker = (StandardUser) takerWallet.getUser();
-
-        // 4. Orchestration: We tell the domain objects to do the work.
-        // We generate a unique reference for the matching bet.
+        // 5. Orchestration: Calculate Liability and Create Bet
+        // The offer.fill() method handles the math and throws descriptive errors if
+        // the taker tries to match more than what is available.
         String ref = "MATCH_" + UUID.randomUUID().toString().substring(0, 8);
-        
-        // The Offer 'fill' method handles the math of reducing the remaining stake 
-        // and creating the Bet entity.
         Bet bet = offer.fill(makerStakeToMatch, taker, ref);
 
-        // The Wallet 'reserve' method handles moving the taker's liability into 
-        // a "held" state so they can't spend it elsewhere while the bet is live.
+        // 6. Wallet Reservation: Hold the Taker's liability in escrow.
+        // The wallet.reserve() method now throws an accurate 'Insufficient Funds' message
+        // if the taker doesn't have enough to cover the liability.
         takerWallet.reserve(bet.getTakerLiability());
 
-        // 5. Persistence: Save everything back to the database.
+        // 7. Final Persistence
         betRepository.save(bet);
         walletRepository.save(takerWallet);
         offerRepository.save(offer);

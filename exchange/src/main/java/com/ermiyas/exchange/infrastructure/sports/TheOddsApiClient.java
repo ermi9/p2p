@@ -87,18 +87,17 @@ public class TheOddsApiClient implements SportsDataProvider {
     @Override
     public Map<String, List<Odds>> fetchBestOdds(SportRequest request) {
         Map<String, BestOddsResult> sourceData = fetchBestOddsWithSources(request);
-        Map<String, List<Odds>> legacyMap = new HashMap<String, List<Odds>>();
+        Map<String, List<Odds>> OddsMap = new HashMap<String, List<Odds>>();
         
-        // Use traditional entry set iteration instead of forEach lambda
         for (Map.Entry<String, BestOddsResult> entry : sourceData.entrySet()) {
             BestOddsResult res = entry.getValue();
             List<Odds> oddsList = new ArrayList<Odds>();
             oddsList.add(res.getHomeOdds());
             oddsList.add(res.getAwayOdds());
             oddsList.add(res.getDrawOdds());
-            legacyMap.put(entry.getKey(), oddsList);
+            OddsMap.put(entry.getKey(), oddsList);
         }
-        return legacyMap;
+        return OddsMap;
     }
 
     @Override
@@ -124,9 +123,7 @@ public class TheOddsApiClient implements SportsDataProvider {
         return scoreMap;
     }
 
-    /**
-     * Standard Java loop to replace Stream/filter/findFirst
-     */
+
     private MarketStrategy getStrategy(SportRequest request) {
         for (int i = 0; i < marketStrategies.size(); i++) {
             MarketStrategy strategy = marketStrategies.get(i);

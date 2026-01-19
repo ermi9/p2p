@@ -9,16 +9,13 @@ import com.ermiyas.exchange.domain.exception.ExchangeException;
 import com.ermiyas.exchange.domain.exception.IllegalBetException;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 
 /**
- *
- * This class represents a binding contract between a Maker and a Taker.
- * It encapsulates the financial settlement logic, ensuring that only users 
- * with financial capabilities (StandardUsers) can participate in fund movements.
+ * Bet Entity.
+ * Represents a matched contract between two users.
+ * Updated to support dynamic UI rendering without recursion.
  */
-
 @Entity
 @Table(name = "bets")
 @Getter
@@ -31,111 +28,75 @@ public class Bet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    /**
+     * Changed to EAGER fetch to ensure match data is available for the UI summary.
+     * Use @JsonIncludeProperties to send only the data needed for the dashboard cards,
+     * which prevents infinite recursion with the Event and User entities.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "offer_id")
+    @JsonIncludeProperties({"id", "predictedOutcome", "event", "odds"})
     private Offer offer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "taker_id")
+    @JsonIncludeProperties({"id", "username"})
     private User taker; 
 
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "maker_stake", nullable = false))
-    @Setter(AccessLevel.NONE) 
     private Money makerStake;
 
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "taker_liability", nullable = false))
-    @Setter(AccessLevel.NONE) 
     private Money takerLiability;
 
     @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "odds", nullable = false))
     private Odds odds;
 
     private String reference;
-    
-    @Column(updatable = false)
-    private Instant createdAt;
 
     @Enumerated(EnumType.STRING)
-    @Setter(AccessLevel.NONE)
     private BetStatus status;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = Instant.now();
-        if (this.status == null) {
-            this.status = BetStatus.MATCHED;
-        }
-    }
+    // 
 
-
-    /**
-     * PURE OOP: Self-Settlement Orchestration.
-     * * Logic: Compares the actual event result with the predicted outcome from the offer.
-     * Delegates fund movement to specific win/loss handlers.
-     * * @param actualResult The final result of the fixture.
-     * @param policy The commission structure to apply to the winner's profit.
-     * @throws ExchangeException if the bet is already settled or participants are invalid.
-     */
-    public void resolve(Outcome actualResult, CommissionPolicy policy) throws ExchangeException {
-        if (this.status == BetStatus.SETTLED) {
-            throw new IllegalBetException("Integrity Error: Bet #" + id + " is already settled.");
-        }
-
-        Outcome predicted = offer.getPredictedOutcome();
-        
-        // Determination logic: Maker wins if prediction matches the result
-        if (actualResult == predicted) {
+    public void resolve(Outcome eventResult, CommissionPolicy policy) throws ExchangeException {
+        if (eventResult == Outcome.DRAW) {
+            handleDraw();
+        } else if (eventResult == offer.getPredictedOutcome()) {
             handleMakerWin(policy);
         } else {
             handleTakerWin(policy);
         }
-
         this.status = BetStatus.SETTLED;
     }
 
-    /**
-     * Logic: Payout process when the Maker wins.
-     * * Verification: Ensures both participants are StandardUsers. 
-     * Admins do not have wallets and cannot participate in settlements.
-     */
+    private void handleDraw() throws ExchangeException {
+        if (getMaker() instanceof StandardUser maker && taker instanceof StandardUser standardTaker) {
+            maker.getWallet().unreserve(makerStake);
+            standardTaker.getWallet().unreserve(takerLiability);
+        }
+    }
+
     private void handleMakerWin(CommissionPolicy policy) throws ExchangeException {
-        User maker = this.getMaker();
-        
-        // PURE OOP: Use 'instanceof' pattern matching for safe type handling
-        if (maker instanceof StandardUser standardMaker && taker instanceof StandardUser standardTaker) {
-
-            standardMaker.getWallet().settleWin(makerStake, takerLiability, policy);
-            
-            // Taker loses: Reserved liability is deducted from total balance
+        if (getMaker() instanceof StandardUser maker && taker instanceof StandardUser standardTaker) {
+            maker.getWallet().settleWin(makerStake, takerLiability, policy);
             standardTaker.getWallet().settleLoss(takerLiability);
-        } else {
-            throw new IllegalBetException("System Integrity Error: Non-player account found in financial settlement.");
         }
     }
 
-    /**
-     * Logic: Payout process when the Taker wins.
-     */
     private void handleTakerWin(CommissionPolicy policy) throws ExchangeException {
-        User maker = this.getMaker();
-
-        if (maker instanceof StandardUser standardMaker && taker instanceof StandardUser standardTaker) {
-            // Taker receives: Their reserved liability (unreserved) + Maker's stake (profit)
+        if (getMaker() instanceof StandardUser maker && taker instanceof StandardUser standardTaker) {
             standardTaker.getWallet().settleWin(takerLiability, makerStake, policy);
-            
-            // Maker loses: Their reserved stake is deducted from total balance
-            standardMaker.getWallet().settleLoss(makerStake);
+            maker.getWallet().settleLoss(makerStake);
         } else {
-            throw new IllegalBetException("System Integrity Error: Non-player account found in financial settlement.");
+            throw new IllegalBetException("System Integrity Error: Non-player account found in settlement.");
         }
     }
 
-    /**
-     * Accesses the Maker through the associated Offer.
-     */
-    public User getMaker() {
-        return offer.getMaker();
+    public User getMaker() { 
+        return offer.getMaker(); 
     }
 }

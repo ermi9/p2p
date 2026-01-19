@@ -32,6 +32,10 @@ public abstract class User implements UserInterface {
     public boolean authenticate(String rawInput) {
         return this.password.matches(rawInput);
     }
+    @Override
+    public void updatePassword(Password newPassword) {
+        this.password = newPassword;
+    }
 
     public abstract String getRoleName();
 }

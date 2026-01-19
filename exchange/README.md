@@ -1,226 +1,80 @@
-# 🧩 P2P Sports Betting Exchange (Student Project)
+# 🧩 FairPlay: P2P Sports Betting Exchange (Student Project)
 
-## Overview
-This repository contains a peer-to-peer (P2P) sports betting exchange built as a learning-focused student project, with a strong emphasis on core business logic, correctness, and architecture. 
+## 🌟 Overview
+This repository contains a peer-to-peer (P2P) sports betting exchange built as a learning-focused student project. The primary goal is not to ship a commercial product, but to deeply understand and implement the mechanics of an exchange-style system—where users bet against each other, not the platform.
 
-Unlike traditional bookmakers, this system allows users to bet against each other, not against the platform.
-
-* **Users define their own odds**
-* **The platform takes no betting risk**
-* **Funds are handled via explicit reservation-based accounting**
-* **Settlement is deterministic and transparent**
-
-The primary goal of this project is not to ship a commercial product, but to deeply understand and implement the mechanics of an exchange-style betting system, step by step, starting from a clean, framework-agnostic core.
+**Key Characteristics:**
+* **Users define their own odds:** No house-set prices.
+* **Platform takes no risk:** The system acts strictly as an escrow and matching engine.
+* **Reservation-based accounting:** Funds are explicitly reserved to prevent double-spending.
+* **Deterministic Settlement:** Markets are settled based on verified external data.
 
 ---
 
-## 🎯 Project Goals
-This project is intentionally designed to achieve the following:
+## 🎯 Project Philosophy: Learning Over Frameworks
+This project is intentionally designed to explore the "Why" before the "How":
+* **Core Logic First:** We start with domain logic (What is an offer? How is risk calculated?) before worrying about the UI shell.
+* **Clean Architecture:** Business rules are isolated from Spring Boot and databases, allowing the infrastructure to remain replaceable.
+* **Transparent Mechanics:** Every step—from posting an offer to matching and final settlement—is explicit and traceable.
 
-### 1️⃣ Learn by building the core, not the shell
-Most projects start with frameworks, databases, and UI. This one starts with domain logic:
-* What does an offer really represent?
-* What happens when an offer is partially filled?
-* How do asymmetric risks work?
-* When does money actually move?
-* How do we prevent double-spending?
 
-### 2️⃣ Model an exchange, not a bookmaker
-Key characteristics of an exchange-style system:
-* Users bet **FOR** or **AGAINST** outcomes.
-* Odds are user-defined.
-* The platform does not set prices or take risk.
-* External bookmaker odds (future) are reference-only.
-
-### 3️⃣ Practice clean, evolvable architecture
-The project follows a domain-first, clean architecture style:
-* Business rules are isolated.
-* Use cases are explicit.
-* Infrastructure is replaceable.
-* Frameworks are delayed on purpose.
 
 ---
 
-## 🧠 High-level Architecture
+## 🛠️ Current Features & Architecture
 
+### 1. The Strategy Pattern (Market Intelligence)
+The backend uses a polymorphic **Strategy Pattern** to handle different market types. A notable feature is the **Outlier Detection Logic**:
+* **Consensus Filtering:** The system calculates a median price from multiple bookmaker sources.
+* **Data Sanitization:** It automatically discards "junk" odds (e.g., 980.00) that often appear in external APIs during market suspensions.
 
+### 2. Modular Frontend
+The UI has been refactored for professional scalability:
+* **UI Components:** Logic is split between data controllers (e.g., `trading.js`) and reusable UI helpers (e.g., `trading-ui.js`).
+* **Unified Styling:** A global layout engine (`base.css`) and component library (`components.css`) ensure a consistent user experience.
+
+### 3. Secure Accounting
+Wallets use a reservation system. When you place a bet, your money isn't "gone"—it is **Reserved (Escrowed)** until the match is over, ensuring the winner can always be paid.
+
+---
+
+## 📂 High-Level Structure
 
 ```text
-┌──────────────────────────┐
-│      Infrastructure      │
-│  (in-memory now, DB later)│
-└────────────▲─────────────┘
-             │ implements
-┌────────────┴─────────────┐
-│        Application        │
-│   (use cases + ports)     │
-└────────────▲─────────────┘
-             │ uses
-┌────────────┴─────────────┐
-│          Domain           │
-│  (pure business logic)    │
-└──────────────────────────┘
+.
+├── frontend/                   # Web interface (HTML, CSS, JS, Assets)
+│   ├── css/                    # Modular stylesheets (base, components)
+│   ├── js/                     # Feature logic and UI component helpers
+│   └── logos/                  # Team and league branding
+├── src/main/java/com/ermiyas/exchange/
+│   ├── api/                    # REST Controllers and DTOs
+│   ├── application/            # Business services and orchestration
+│   ├── Config/                 # Security and system configuration
+│   ├── domain/                 # Core logic, Entities, Repositories, and VOs
+│   └── infrastructure/         # External API clients and JPA persistence
+├── src/main/resources/         # Configuration properties
+├── pom.xml                     # Maven build configuration
+└── README.md                   # Project documentation
 
-```
-*Key Rules:*
+## 🚧 Current Status: "Not Perfect Yet"
+This project is an evolving learning vehicle and is not yet production-ready.
 
-* Domain knows nothing about Spring, HTTP, or databases.
+### Known Areas for Improvement:
+- **Authentication**: Currently using LocalStorage; needs a transition to JWT or Secure Sessions.
+- **Real-time Updates**: Looking to implement WebSockets for instant, real-time offer matching.
+- **Test Coverage**: While core domain entities are tested, integration testing for the external API strategies is ongoing.
 
-* Application orchestrates workflows but does not contain business rules.
+## 🤝 Collaborations & Feedback
+I am very open to feedback, suggestions, and collaborations! Whether you are a student, a developer, or a reviewer, I’d love to hear your thoughts on:
 
-* Infrastructure is an adapter, not the core.
+- **Domain Modeling**: Are there better ways to handle asymmetric risk?
+- **Architecture**: How can the separation between layers be even cleaner?
+- **Edge Cases**: What sports-specific scenarios am I missing?
 
-```text
-  
-src/main/java/com/ermiyas/exchange
-│
-├── common/                 # Shared value objects
-│   ├── Money.java          # Immutable, non-negative money
-│   └── Odds.java           # Decimal odds (> 1.0)
-│
-├── domain/
-│   ├── orderbook/          # Betting primitives
-│   │   ├── Offer.java
-│   │   └── BetAgreement.java
-│   │
-│   ├── wallet/             # Accounting & reservations
-│   │   ├── Wallet.java
-│   │   ├── WalletTransaction.java
-│   │   └── InsufficientFundsException.java
-│   │
-│   └── settlement/         # Outcome modeling (WIP / evolving)
-│
-├── application/
-│   ├── offer/              # Create / take offer use cases
-│   └── settlement/         # Outcome settlement use case
-│
-├── infrastructure/
-│   └── repository/         # In-memory implementations (temporary)
-│
-└── ExchangeApplication.java # Entry point (Spring Boot later)
-```
-## 📖 Suggested Reading Order
-If you’re new to the project, this order will save you time:
+### How to Contribute:
+- Feel free to open Issues for bugs or feature ideas.
+- Pull Requests are welcome—please ensure your code follows the existing modular structure.
+- Reach out if you want to discuss the project mechanics in detail!
 
-1.  **Value objects**
-    * `Money.java`
-    * `Odds.java`
-2.  **Wallet & accounting**
-    * `Wallet.java`
-    * Understand reservation vs available balance
-3.  **Betting core**
-    * `Offer.java`
-    * `BetAgreement.java`
-4.  **Use cases**
-    * `CreateOfferUseCase`
-    * `TakeOfferUseCase`
-    * `SettleOutcomeUseCase`
-5.  **Infrastructure**
-    * In-memory repositories (boring by design)
-
----
-
-## ⚖️ Key Domain Concepts
-
-### Money
-* Immutable
-* Non-negative
-* Explicit arithmetic (`plus`, `minus`, `multiply`)
-* No raw `BigDecimal` leaks into business logic
-
-### Odds
-* Decimal odds (> 1.0)
-* Profit part exposed via `minusOne()`
-* No bookmaker-style shortcuts
-
-### Offer
-* Represents a user’s intent to bet
-* Can be partially filled
-* Supports **FOR / AGAINST** positions
-* Status is derived, not stored
-
-### BetAgreement
-Created when an offer (or part of it) is taken. It captures:
-* Maker vs taker
-* Asymmetric risk
-* Total payout
-* Winner / loser derivation based on outcome
-
-### Wallet (Reservation-based)
-Wallets do not immediately lose money when a bet is placed. Instead:
-1. Funds are **reserved**
-2. Reservations are **released** at settlement
-3. Winner is **credited** explicitly
-
-This prevents:
-* Double spending
-* Inconsistent states
-* Hidden side effects
-
----
-
-## 🔄 Betting & Settlement Flow (Conceptual)
-
-
-
-1. **User A** creates an offer
-2. **User B** takes the offer
-3. A **BetAgreement** is created
-4. Both wallets **reserve** their respective risks
-5. Event outcome is known
-6. **Settlement occurs:**
-    * Reservations released
-    * Winner credited
-    * Agreement marked settled
-
-Everything is explicit and traceable.
-
----
-
-## 🚧 Current Status
-
-### ✅ Implemented
-* Core domain entities
-* Reservation-based wallet model
-* Offer creation & taking
-* Basic settlement flow (still stabilizing)
-* In-memory repositories
-* Clean separation of layers
-
-### 🏗️ In Progress
-* Finalizing settlement logic consistency
-* Removing legacy abstractions
-* Hardening invariants
-* Improving test coverage
-
-### 📅 Planned (Coming Weeks)
-* Freeze core domain
-* Introduce Spring Boot adapters
-* Persistence layer (JPA or similar)
-* REST APIs
-* Minimal frontend
-* Documentation & examples
-
----
-
-## 🧪 What This Project Is Not
-* Not a production-ready betting system
-* Not a legal or financial product
-* Not optimized for performance or scale (yet)
-* Not a UI-first application
-
-*This is a learning vehicle, intentionally scoped.*
-
----
-
-## 💬 Feedback & Suggestions Welcome
-This project is actively evolving. If you are a student, developer, reviewer, or just curious, I’d genuinely appreciate feedback on:
-* Domain modeling
-* Architecture choices
-* Naming
-* Clarity
-* Edge cases I might be missing
-
-Feel free to open issues, leave comments, or suggest improvements.
-
-📌 **Final Note:** The main intention behind this project is to learn how complex systems are built from the inside out, rather than relying on frameworks to hide the complexity. If you take the time to read through the core domain, thank you — and I’d love to hear your thoughts.
+## 📌 Final Note
+Building this from the inside out has been a journey of discovering complexity rather than hiding it. Thank you for taking the time to explore FairPlay.

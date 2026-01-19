@@ -6,7 +6,7 @@ import com.ermiyas.exchange.domain.exception.ExchangeException;
 import com.ermiyas.exchange.domain.exception.IllegalBetException;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,13 +68,25 @@ public class Event {
     private String refDrawSource;
     // 
 
+    private Integer finalHomeScore;//to settle it later
+    private Integer finalAwayScore;
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Builder.Default
+    @JsonIgnore
     private List<Offer> offers = new ArrayList<>();
 
     public void processResult(int homeScore, int awayScore, SettlementStrategy strategy) throws ExchangeException {
         validateSettlementState();
+        
+        // Save the scores so the Admin can see them in the UI
+        this.finalHomeScore = homeScore;
+        this.finalAwayScore = awayScore;
+        
+        // Determine winner based on the provided strategy
         this.result = strategy.determineWinner(homeScore, awayScore);
+        
+        //  Flip status to COMPLETED to flag this for the Admin
         this.status = EventStatus.COMPLETED;
     }
 

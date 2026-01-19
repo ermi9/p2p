@@ -8,7 +8,7 @@ import lombok.*;
 @Entity
 @DiscriminatorValue("STANDARD")
 @NoArgsConstructor
-public class StandardUser extends User {
+public class StandardUser extends User implements WalletOwner {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Wallet wallet; // OOP: Financial capability limited to players
@@ -16,11 +16,11 @@ public class StandardUser extends User {
     public StandardUser(String username, String email, Password password) {
         super(username, email, password);
     }
-
+    @Override
     public Wallet getWallet() {
         return this.wallet;
     }
-
+    @Override
     public void setWallet(Wallet wallet) {
         this.wallet = wallet;
     }

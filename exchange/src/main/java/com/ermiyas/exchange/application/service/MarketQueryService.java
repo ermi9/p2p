@@ -1,6 +1,6 @@
 package com.ermiyas.exchange.application.service;
 
-import com.ermiyas.exchange.api.dto.ExchangeDtos.EventSummaryResponse;
+import com.ermiyas.exchange.api.dto.ExchangeDtos.*;
 import com.ermiyas.exchange.domain.model.*;
 import com.ermiyas.exchange.domain.repository.event.EventRepository;
 import com.ermiyas.exchange.domain.repository.offer.OfferRepository;
@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,125 +27,150 @@ public class MarketQueryService {
     private final BetRepository betRepository;
 
     /**
-     * UPDATED: Returns DTOs instead of raw Entities.
-     * Logic: Groups active fixtures by league and includes professional branding.
+     *  
+     * 1. Future 'OPEN' matches are returned for players.
+     * 2. 'COMPLETED' matches are ONLY returned if they have bets (for Admin settlement).
      */
     public Map<String, List<EventSummaryResponse>> getEventsByLeague() {
-        List<Event> openEvents = eventRepository.findAllByStatus(EventStatus.OPEN);
+        LocalDateTime now = LocalDateTime.now();
+        List<Event> allEvents = eventRepository.findAll();
         Map<String, List<EventSummaryResponse>> leagueMap = new HashMap<>();
+        
+        for (int i = 0; i < allEvents.size(); i++) {
+            Event event = allEvents.get(i);
+            
+            // Temporal and Status Check
+            boolean isFutureOpen = (event.getStatus() == EventStatus.OPEN && event.getStartTime().isAfter(now));
+            
+            //  Only send COMPLETED matches to the UI if there is something to settle
+            boolean isCompletedWithBets = (event.getStatus() == EventStatus.COMPLETED && 
+                                          event.getOffers() != null && !event.getOffers().isEmpty());
 
-        for (Event event : openEvents) {
-            String leagueDisplayName = (event.getLeague() != null) 
-                    ? event.getLeague().getDisplayName() 
-                    : "International Football";
-
-            // Map the Entity to the DTO including the NEW source fields
-            EventSummaryResponse summary = mapToSummary(event);
-
-            leagueMap.computeIfAbsent(leagueDisplayName, k -> new ArrayList<>()).add(summary);
+            if (isFutureOpen || isCompletedWithBets) {
+                String leagueName = (event.getLeague() != null) ? event.getLeague().getDisplayName() : "International Football";
+                
+                if (!leagueMap.containsKey(leagueName)) {
+                    leagueMap.put(leagueName, new ArrayList<>());
+                }
+                leagueMap.get(leagueName).add(mapToSummary(event));
+            }
         }
         return leagueMap;
     }
 
-    /**
-     * Provides a snapshot including the Bookmaker Source for each odd.
-     */
     public Map<String, Object> getFixtureDetailSnapshot(Long eventId) throws ExchangeException {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new UserNotFoundException("Market Error: Fixture #" + eventId + " not found."));
-
-        Map<String, Object> snapshot = new HashMap<>();
+                .orElseThrow(() -> new UserNotFoundException("Fixture #" + eventId + " not found."));
         
+        Map<String, Object> snapshot = new HashMap<>();
         snapshot.put("id", event.getId());
         snapshot.put("homeTeam", event.getHomeTeam());
         snapshot.put("awayTeam", event.getAwayTeam());
         snapshot.put("startTime", event.getStartTime());
-
-        // Grouping price with its source
-        Map<String, Object> homePrice = new HashMap<>();
-        homePrice.put("odds", event.getRefHomeOdds().value().doubleValue());
-        homePrice.put("source", event.getRefHomeSource()); // New field
         
-        Map<String, Object> awayPrice = new HashMap<>();
-        awayPrice.put("odds", event.getRefAwayOdds().value().doubleValue());
-        awayPrice.put("source", event.getRefAwaySource()); // New field
-        
-        Map<String, Object> drawPrice = new HashMap<>();
-        drawPrice.put("odds", event.getRefDrawOdds().value().doubleValue());
-        drawPrice.put("source", event.getRefDrawSource()); // New field
+        snapshot.put("homeOdds", event.getRefHomeOdds().value());
+        snapshot.put("homeSource", event.getRefHomeSource());
+        snapshot.put("awayOdds", event.getRefAwayOdds().value());
+        snapshot.put("awaySource", event.getRefAwaySource());
+        snapshot.put("drawOdds", event.getRefDrawOdds().value());
+        snapshot.put("drawSource", event.getRefDrawSource());
 
-        Map<String, Object> bookiePrices = new HashMap<>();
-        bookiePrices.put("HOME", homePrice);
-        bookiePrices.put("AWAY", awayPrice);
-        bookiePrices.put("DRAW", drawPrice);
-        
-        snapshot.put("referenceOdds", bookiePrices);
-        snapshot.put("exchangeLiquidity", aggregateP2PLiquidity(eventId));
-
+        List<Offer> offers = offerRepository.findAllByEventId(eventId);
+        List<OfferResponse> offerResponses = new ArrayList<>();
+        for (int j = 0; j < offers.size(); j++) {
+            offerResponses.add(mapToOfferResponse(offers.get(j)));
+        }
+        snapshot.put("offers", offerResponses);
         return snapshot;
     }
 
-    /**
-     * Helper Logic: Maps the Entity to a DTO for the API layer.
-     */
-    private EventSummaryResponse mapToSummary(Event event) {
-        return EventSummaryResponse.builder()
-                .id(event.getId())
-                .homeTeam(event.getHomeTeam())
-                .awayTeam(event.getAwayTeam())
-                .startTime(event.getStartTime())
-                .leagueName(event.getLeague() != null ? event.getLeague().getDisplayName() : null)
-                // Values
-                .homeOdds(event.getRefHomeOdds() != null ? event.getRefHomeOdds().value().doubleValue() : null)
-                .awayOdds(event.getRefAwayOdds() != null ? event.getRefAwayOdds().value().doubleValue() : null)
-                .drawOdds(event.getRefDrawOdds() != null ? event.getRefDrawOdds().value().doubleValue() : null)
-                // Sources (The "Professional" Brand Names)
-                .homeSource(event.getRefHomeSource())
-                .awaySource(event.getRefAwaySource())
-                .drawSource(event.getRefDrawSource())
+    public List<OfferResponse> getUserOpenOffers(Long userId) {
+        List<Offer> all = offerRepository.findAll();
+        List<OfferResponse> results = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            Offer o = all.get(i);
+            if (o.getMaker() != null && o.getMaker().getId().equals(userId)) {
+                if (o.getStatus() == OfferStatus.OPEN || o.getStatus() == OfferStatus.PARTIALLY_TAKEN) {
+                    results.add(mapToOfferResponse(o));
+                }
+            }
+        }
+        return results;
+    }
+
+    public List<MatchedBetResponse> getUserMatchedBets(Long userId) {
+        List<Bet> all = betRepository.findAll();
+        List<MatchedBetResponse> results = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            Bet b = all.get(i);
+            if (b.getStatus() == BetStatus.MATCHED || b.getStatus() == BetStatus.SETTLED) {
+                boolean isTaker = (b.getTaker() != null && b.getTaker().getId().equals(userId));
+                boolean isMaker = (b.getOffer() != null && b.getOffer().getMaker() != null && b.getOffer().getMaker().getId().equals(userId));
+                
+                if (isTaker || isMaker) {
+                    results.add(mapToBetResponse(b));
+                }
+            }
+        }
+        return results;
+    }
+
+    private MatchedBetResponse mapToBetResponse(Bet b) {
+        return MatchedBetResponse.builder()
+                .id(b.getId())
+                .status(b.getStatus().name())
+                .offer(mapToOfferResponse(b.getOffer()))
+                .taker(UserResponse.builder().id(b.getTaker().getId()).username(b.getTaker().getUsername()).build())
+                .takerLiability(b.getTakerLiability().value())
+                .makerStake(b.getMakerStake().value())
+                .odds(b.getOdds().value())
                 .build();
     }
 
-    //  logic below remains unchanged 
-
-    public List<Offer> getUserOpenOffers(Long userId) {
-        List<Offer> all = offerRepository.findAll();
-        List<Offer> userOffers = new ArrayList<>();
-        for (Offer offer : all) {
-            if (offer.getMaker().getId().equals(userId) && 
-               (offer.getStatus() == OfferStatus.OPEN || offer.getStatus() == OfferStatus.PARTIALLY_TAKEN)) {
-                userOffers.add(offer);
-            }
-        }
-        return userOffers;
+    private EventSummaryResponse mapToSummary(Event event) {
+        return EventSummaryResponse.builder()
+                .id(event.getId())
+                .externalId(event.getExternalId())
+                .homeTeam(event.getHomeTeam())
+                .awayTeam(event.getAwayTeam())
+                .startTime(event.getStartTime())
+                .leagueName(event.getLeague() != null ? event.getLeague().getDisplayName() : "International Football")
+                .homeOdds(event.getRefHomeOdds() != null ? event.getRefHomeOdds().value().doubleValue() : null)
+                .awayOdds(event.getRefAwayOdds() != null ? event.getRefAwayOdds().value().doubleValue() : null)
+                .drawOdds(event.getRefDrawOdds() != null ? event.getRefDrawOdds().value().doubleValue() : null)
+                .homeSource(event.getRefHomeSource())
+                .awaySource(event.getRefAwaySource())
+                .drawSource(event.getRefDrawSource())
+                .status(event.getStatus() != null ? event.getStatus().name() : null)
+                .offerCount(event.getOffers() != null ? event.getOffers().size() : 0)
+                .finalHomeScore(event.getFinalHomeScore())
+                .finalAwayScore(event.getFinalAwayScore())
+                .build();
     }
 
-    public List<Bet> getUserMatchedBets(Long userId) {
-        List<Bet> all = betRepository.findAll();
-        List<Bet> userBets = new ArrayList<>();
-        for (Bet bet : all) {
-            if (bet.getTaker().getId().equals(userId) || bet.getOffer().getMaker().getId().equals(userId)) {
-                userBets.add(bet);
-            }
-        }
-        return userBets;
+    private OfferResponse mapToOfferResponse(Offer o) {
+        return OfferResponse.builder()
+                .id(o.getId())
+                .maker(UserResponse.builder()
+                        .id(o.getMaker().getId())
+                        .username(o.getMaker().getUsername())
+                        .role(o.getMaker().getRoleName())
+                        .build())
+                .event(mapToEventResponse(o.getEvent()))
+                .outcome(o.getPredictedOutcome() != null ? o.getPredictedOutcome().name() : null)
+                .odds(o.getOdds() != null ? o.getOdds().value() : null)
+                .remainingStake(o.getRemainingStake() != null ? o.getRemainingStake().value() : null)
+                .status(o.getStatus() != null ? o.getStatus().name() : null)
+                .build();
     }
 
-    private Map<Outcome, Map<Double, Double>> aggregateP2PLiquidity(Long eventId) {
-        List<Offer> allOffers = offerRepository.findAllByEventId(eventId);
-        Map<Outcome, Map<Double, Double>> liquidity = new HashMap<>();
-
-        for (Offer offer : allOffers) {
-            if (offer.getStatus() == OfferStatus.OPEN || offer.getStatus() == OfferStatus.PARTIALLY_TAKEN) {
-                Outcome outcome = offer.getPredictedOutcome();
-                Double oddsValue = offer.getOdds().value().doubleValue();
-                Double availableStake = offer.getRemainingStake().value().doubleValue();
-
-                liquidity.computeIfAbsent(outcome, k -> new HashMap<>());
-                Map<Double, Double> priceBuckets = liquidity.get(outcome);
-                priceBuckets.put(oddsValue, priceBuckets.getOrDefault(oddsValue, 0.0) + availableStake);
-            }
-        }
-        return liquidity;
+    private EventResponse mapToEventResponse(Event e) {
+        return EventResponse.builder()
+                .id(e.getId())
+                .homeTeam(e.getHomeTeam())
+                .awayTeam(e.getAwayTeam())
+                .startTime(e.getStartTime())
+                .leagueName(e.getLeague() != null ? e.getLeague().getDisplayName() : "International Football")
+                .build();
     }
 }

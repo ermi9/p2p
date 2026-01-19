@@ -1,7 +1,7 @@
 package com.ermiyas.exchange.domain.model;
 
 import com.ermiyas.exchange.domain.model.user.User; 
-import com.ermiyas.exchange.domain.model.user.StandardUser;
+import com.ermiyas.exchange.domain.model.user.WalletOwner;
 import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.vo.Odds;
 import com.ermiyas.exchange.domain.vo.CommissionPolicy;
@@ -63,32 +63,24 @@ public class Bet {
     // 
 
     public void resolve(Outcome eventResult, CommissionPolicy policy) throws ExchangeException {
-        if (eventResult == Outcome.DRAW) {
-            handleDraw();
-        } else if (eventResult == offer.getPredictedOutcome()) {
+        if(eventResult == offer.getPredictedOutcome())
             handleMakerWin(policy);
-        } else {
+        else{
             handleTakerWin(policy);
         }
-        this.status = BetStatus.SETTLED;
-    }
-
-    private void handleDraw() throws ExchangeException {
-        if (getMaker() instanceof StandardUser maker && taker instanceof StandardUser standardTaker) {
-            maker.getWallet().unreserve(makerStake);
-            standardTaker.getWallet().unreserve(takerLiability);
-        }
+        this.status=BetStatus.SETTLED;
+    
     }
 
     private void handleMakerWin(CommissionPolicy policy) throws ExchangeException {
-        if (getMaker() instanceof StandardUser maker && taker instanceof StandardUser standardTaker) {
+        if (getMaker() instanceof WalletOwner maker && taker instanceof WalletOwner standardTaker) {
             maker.getWallet().settleWin(makerStake, takerLiability, policy);
             standardTaker.getWallet().settleLoss(takerLiability);
         }
     }
 
     private void handleTakerWin(CommissionPolicy policy) throws ExchangeException {
-        if (getMaker() instanceof StandardUser maker && taker instanceof StandardUser standardTaker) {
+        if (getMaker() instanceof WalletOwner maker && taker instanceof WalletOwner standardTaker) {
             standardTaker.getWallet().settleWin(takerLiability, makerStake, policy);
             maker.getWallet().settleLoss(makerStake);
         } else {

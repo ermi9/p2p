@@ -62,7 +62,6 @@ const getLogoPath = (leagueName, teamName) => {
     const folder = leagueFolderMap[leagueName];
     
 
-    //if (!folder) return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
     const fileName = teamNameMap[teamName] || teamName;
     return `logos/${folder}/${fileName}.png`;

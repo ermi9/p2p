@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * REFACTORED: FixtureNameMatcher (OCP Friendly)
+ * FixtureNameMatcher (OCP Friendly)
  * This class is now "closed for modification" but "open for extension".
  *
  */
@@ -39,7 +39,7 @@ public class FixtureNameMatcher {
     }
 
     /**
-     * Implementation: Contains our original "contains" logic.
+     *  Contains our "contains" logic.
      */
     @Component
     public static class DefaultContainsMatcher implements NameMatchingStrategy {

@@ -1,5 +1,7 @@
 package com.ermiyas.exchange.domain.model.user;
 
+import com.ermiyas.exchange.domain.exception.ExchangeException;
+import com.ermiyas.exchange.domain.model.Wallet;
 import com.ermiyas.exchange.domain.vo.Password;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,4 +40,6 @@ public abstract class User implements UserInterface {
     }
 
     public abstract String getRoleName();
+    public abstract Wallet getWallet() throws ExchangeException;
+
 }

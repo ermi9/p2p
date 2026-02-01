@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * PURE OOP: Event Aggregate Root.
+ * Event Aggregate Root.
  * Updated to include reference source names for professional odd tracking.
  */
 @Entity

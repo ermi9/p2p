@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-//@CrossOrigin(origins = "http://127.0.0.1:5501")
+@CrossOrigin(origins = "http://127.0.0.1:5501")
 
 @RestController
 @RequestMapping("/api/v1/markets")
@@ -19,7 +19,7 @@ public class MarketController {
     private final MarketQueryService marketQueryService;
 
     /**
-     * Logic: Groups active fixtures by league for the main Dashboard.
+     *  Groups active fixtures by league for the main Dashboard.
      */
     @GetMapping("/leagues")
     public ResponseEntity<Map<String, List<ExchangeDtos.EventSummaryResponse>>> getMarketsByLeague() {
@@ -27,7 +27,7 @@ public class MarketController {
     }
 
     /**
-     * Logic: Returns detailed liquidity and odds for the Match Detail view.
+     *  Returns detailed liquidity and odds for the Match Detail view.
      */
     @GetMapping("/fixtures/{id}")
     public ResponseEntity<Map<String, Object>> getFixtureDetail(@PathVariable Long id) throws ExchangeException {

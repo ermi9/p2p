@@ -5,6 +5,6 @@ import com.ermiyas.exchange.domain.repository.GenericRepository;
 import java.util.List;
 
 public interface BetRepository extends GenericRepository<Bet, Long> {
-    // Navigation: Finding bets through the Offer -> Event path
+    // Finding bets through the Offer -> Event path
     List<Bet> findAllByOfferEventId(Long eventId);
 }

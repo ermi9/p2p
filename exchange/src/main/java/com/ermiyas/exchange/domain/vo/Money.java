@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public final class Money implements Comparable<Money> {
     
     @Column(name = "value")
-    private final BigDecimal value; // OOP: Explicitly final to guarantee immutability
+    private final BigDecimal value; //  
 
     private static final int SCALE = 2;
     private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;

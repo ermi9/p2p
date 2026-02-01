@@ -1,20 +1,15 @@
 package com.ermiyas.exchange.domain.model;
 
 import com.ermiyas.exchange.domain.model.user.User; 
-import com.ermiyas.exchange.domain.model.user.WalletOwner;
 import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.vo.Odds;
 import com.ermiyas.exchange.domain.vo.CommissionPolicy;
 import com.ermiyas.exchange.domain.exception.ExchangeException;
-import com.ermiyas.exchange.domain.exception.IllegalBetException;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
-
 /**
- * Bet Entity.
- * Represents a matched contract between two users.
- * Updated to support dynamic UI rendering without recursion.
+ * Bet Entity
  */
 @Entity
 @Table(name = "bets")
@@ -29,9 +24,8 @@ public class Bet {
     private Long id;
 
     /**
-     * Changed to EAGER fetch to ensure match data is available for the UI summary.
-     * Use @JsonIncludeProperties to send only the data needed for the dashboard cards,
-     * which prevents infinite recursion with the Event and User entities.
+     * Changed to EAGER 
+     * Used @JsonIncludeProperties ,
      */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "offer_id")
@@ -71,21 +65,25 @@ public class Bet {
         this.status=BetStatus.SETTLED;
     
     }
+    private void handleMakerWin(CommissionPolicy policy) throws ExchangeException{
+        Wallet makerWallet=getMaker().getWallet();
+        Wallet takerWallet=taker.getWallet();
 
-    private void handleMakerWin(CommissionPolicy policy) throws ExchangeException {
-        if (getMaker() instanceof WalletOwner maker && taker instanceof WalletOwner standardTaker) {
-            maker.getWallet().settleWin(makerStake, takerLiability, policy);
-            standardTaker.getWallet().settleLoss(takerLiability);
-        }
+        makerWallet.settleWin( makerStake,takerLiability, policy);
+        takerWallet.settleLoss(takerLiability);
+
     }
 
-    private void handleTakerWin(CommissionPolicy policy) throws ExchangeException {
-        if (getMaker() instanceof WalletOwner maker && taker instanceof WalletOwner standardTaker) {
-            standardTaker.getWallet().settleWin(takerLiability, makerStake, policy);
-            maker.getWallet().settleLoss(makerStake);
-        } else {
-            throw new IllegalBetException("System Integrity Error: Non-player account found in settlement.");
-        }
+
+
+    private void handleTakerWin(CommissionPolicy policy) throws ExchangeException{
+        Wallet makerWallet=getMaker().getWallet();
+        Wallet takerWallet=taker.getWallet();
+
+        makerWallet.settleLoss(makerStake);
+        takerWallet.settleWin(takerLiability, makerStake, policy);
+
+
     }
 
     public User getMaker() { 

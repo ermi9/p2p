@@ -11,7 +11,7 @@ import lombok.*;
 public class StandardUser extends User implements WalletOwner {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Wallet wallet; // OOP: Financial capability limited to players
+    private Wallet wallet; //  Financial capability limited to players
 
     public StandardUser(String username, String email, Password password) {
         super(username, email, password);
@@ -30,6 +30,9 @@ public class StandardUser extends User implements WalletOwner {
 
     @Override
     public void validateTransaction(Money amount) {
-        //If needed I can implement restrictions on the account of standard user
+        //if there are restrictions on the standard account
     }
+    
+
+
 }

@@ -1,7 +1,7 @@
 package com.ermiyas.exchange.domain.model;
 
 /**
- * PURE OOP: Tracks the lifecycle of a fixture.
+ * Tracks the lifecycle of a fixture.
  */
 public enum EventStatus {
     OPEN,       // Betting is active

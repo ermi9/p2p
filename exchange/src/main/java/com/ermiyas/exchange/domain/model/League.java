@@ -3,9 +3,8 @@ package com.ermiyas.exchange.domain.model;
 import lombok.Getter;
 
 /**
- * Domain Enum.
  * Maps human-readable leagues to The Odds API keys.
- * This prevents "Stringly Typed" errors across the system.
+ * prevents "Stringly Typed" errors across the system.
  */
 @Getter
 public enum League {

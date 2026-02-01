@@ -1,7 +1,7 @@
 package com.ermiyas.exchange.domain.model;
 
 /**
- * PURE OOP: Tracks the lifecycle of an Offer in the market.
+ * Tracks the lifecycle of an Offer in the market.
  */
 public enum OfferStatus {
     OPEN,               // Initial state, no matches yet

@@ -2,7 +2,6 @@ package com.ermiyas.exchange.application.service;
 
 import com.ermiyas.exchange.domain.model.*;
 import com.ermiyas.exchange.domain.model.user.AdminUser;
-import com.ermiyas.exchange.domain.model.user.StandardUser;
 import com.ermiyas.exchange.domain.model.user.User; // Added to handle base User type
 import com.ermiyas.exchange.domain.repository.event.EventRepository;
 import com.ermiyas.exchange.domain.repository.bet.BetRepository;
@@ -71,28 +70,25 @@ public class AdminSettlementService {
     }
 
     /**
-     *  Explicitly handles StandardUser casting to access getWallet()
-     * Ensures all financial updates are persisted to the database
+        Uses dynamic dispatch to persist wallets through User.getWallet().
      */
     private void resolveAllBets(Event event, CommissionPolicy policy) throws ExchangeException {
         List<Bet> bets = betRepository.findAllByOfferEventId(event.getId());
         for (int i = 0; i < bets.size(); i++) {
             Bet bet = bets.get(i);
             
-            // 1. Logic resolution (math in memory)
+            // 1. Resolve bet
             bet.resolve(event.getResult(), policy);
             
-            // 2. Persist Wallets: Safely check for StandardUser before calling getWallet()
+            // 2. Persist Wallets
             User maker = bet.getOffer().getMaker();
             User taker = bet.getTaker();
 
-            if (maker instanceof StandardUser) {
-                walletRepository.save(((StandardUser) maker).getWallet());
-            }
+            Wallet makerWallet=maker.getWallet();
+            Wallet takerWallet=taker.getWallet();
 
-            if (taker instanceof StandardUser) {
-                walletRepository.save(((StandardUser) taker).getWallet());
-            }
+            walletRepository.save(takerWallet);
+            walletRepository.save(makerWallet);
             
             // 3. Persist the Bet: Updates status so it disappears from 'Active Bets'
             betRepository.save(bet);
@@ -105,11 +101,12 @@ public class AdminSettlementService {
             Offer offer = offers.get(i);
             if (offer.getStatus() == OfferStatus.OPEN || offer.getStatus() == OfferStatus.PARTIALLY_TAKEN) {
                 offer.cancel();
-                if (offer.getMaker() instanceof StandardUser) {
-                    StandardUser player = (StandardUser) offer.getMaker();
-                    player.getWallet().unreserve(offer.getRemainingStake());
-                    walletRepository.save(player.getWallet());
-                }
+
+                User maker=offer.getMaker();
+                Wallet makerWallet=maker.getWallet();
+                makerWallet.unreserve(offer.getRemainingStake());
+                walletRepository.save(makerWallet);
+
                 offerRepository.save(offer);
             }
         }

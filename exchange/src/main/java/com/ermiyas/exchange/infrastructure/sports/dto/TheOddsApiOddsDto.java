@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * REFACTORED: TheOddsApiOddsDto (OCP Friendly)
+ * TheOddsApiOddsDto --OCP Friendly
  */
 @Data
 public class TheOddsApiOddsDto {

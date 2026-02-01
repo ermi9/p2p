@@ -1,6 +1,7 @@
 package com.ermiyas.exchange.application.service;
 
 import com.ermiyas.exchange.domain.logic.SettlementStrategy;
+import com.ermiyas.exchange.domain.logic.SettlementStrategyFactory;
 import com.ermiyas.exchange.domain.model.Event;
 import com.ermiyas.exchange.domain.model.League;
 import com.ermiyas.exchange.domain.model.MarketType;
@@ -22,16 +23,14 @@ public class AdminSyncService {
 
     private final EventRepository eventRepository;
     private final List<SportsDataProvider> providers;
-    private final SettlementStrategy settlementStrategy;
+    private final SettlementStrategyFactory strategyFactory;
 
     public long getActiveFixtureCount() {
         return eventRepository.count();
     }
 
     /**
-     * Refactored Sync Loop: 
-     *  Removed @Transactional to allow individual league commits and avoid long-held DB locks.
-     * Added try-catch and Thread.sleep to handle and prevent API rate limits (429 errors).
+     * Refactored Sync Loop
      */
     @Scheduled(fixedRate = 10800000) // 3 Hours
     public void syncAllFixtures() {
@@ -110,8 +109,11 @@ public class AdminSyncService {
                 Integer[] scores = entry.getValue();
                 if (scores != null && scores.length >= 2) {
                     try {
+                        //using dynamic dispatch + Factory pattern
+                        SettlementStrategy strategy=strategyFactory.getStrategy(event.getMarketType());
+                        
                         // Triggers transition to COMPLETED state
-                        event.processResult(scores[0], scores[1], settlementStrategy);
+                        event.processResult(scores[0], scores[1], strategy);
                         eventRepository.save(event);
                     } catch (Exception e) {
                         System.err.println("Failed to process background result for event: " + event.getId());

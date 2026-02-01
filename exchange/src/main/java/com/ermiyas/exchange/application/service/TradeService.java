@@ -1,7 +1,7 @@
 package com.ermiyas.exchange.application.service;
 
 import com.ermiyas.exchange.domain.model.*;
-import com.ermiyas.exchange.domain.model.user.StandardUser;
+import com.ermiyas.exchange.domain.model.user.User;
 import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.repository.bet.BetRepository;
 import com.ermiyas.exchange.domain.repository.offer.OfferRepository;
@@ -17,7 +17,7 @@ import java.util.Objects;
 
 /**
  * Trade Orchestration Service.
- * Coordinates the matching process between a Taker and an existing Liquidity Offer.
+ * Coordinates the matching process between a Taker and an existing Offer.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +29,6 @@ public class TradeService {
 
     /**
      * Orchestrates a Peer-to-Peer trade match.
-     * Uses pessimistic locking to prevent race conditions during heavy market activity.
      */
     @Transactional(rollbackFor = Exception.class)
     public void matchBet(Long offerId, Long takerUserId, Money makerStakeToMatch) throws ExchangeException {
@@ -52,19 +51,16 @@ public class TradeService {
         Wallet takerWallet = walletRepository.getByUserIdWithLock(takerUserId)
                 .orElseThrow(() -> new SecurityException("Trade Error: Wallet for user #" + takerUserId + " not found."));
 
-        if (!(takerWallet.getUser() instanceof StandardUser taker)) {
-            throw new IllegalBetException("Security Violation: Only player accounts can participate in trades.");
-        }
+        User taker=takerWallet.getUser();
+        taker.getWallet();
+
+
         
         // 5. Orchestration: Calculate Liability and Create Bet
-        // The offer.fill() method handles the math and throws descriptive errors if
-        // the taker tries to match more than what is available.
         String ref = "MATCH_" + UUID.randomUUID().toString().substring(0, 8);
         Bet bet = offer.fill(makerStakeToMatch, taker, ref);
 
         // 6. Wallet Reservation: Hold the Taker's liability in escrow.
-        // The wallet.reserve() method now throws an accurate 'Insufficient Funds' message
-        // if the taker doesn't have enough to cover the liability.
         takerWallet.reserve(bet.getTakerLiability());
 
         // 7. Final Persistence

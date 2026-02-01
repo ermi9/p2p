@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REFACTORED: SportsDataProvider (OCP Friendly)
+ *  SportsDataProvider 
  */
 public interface SportsDataProvider {
 
@@ -20,7 +20,7 @@ public interface SportsDataProvider {
     Map<String, List<Odds>> fetchBestOdds(SportRequest request);
 
     /**
-     * NEW: Fetch Best Odds along with the Brand Name of the provider.
+     *  Fetch Best Odds along with the Brand Name of the provider.
      */
     Map<String, BestOddsResult> fetchBestOddsWithSources(SportRequest request);
 

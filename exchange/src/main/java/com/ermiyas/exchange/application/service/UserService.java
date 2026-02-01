@@ -34,17 +34,15 @@ public class UserService {
             throw new IdentityConflictException("Registration Failed: Username '" + username + "' is already taken.");
         }
 
-        // We cast to User because the repository expects the Entity type
-        User user = (User) UserFactory.createStandard(username, email, password);
+        StandardUser standardUser=UserFactory.createStandard(username, email, password);
 
-        if (user instanceof StandardUser) {
-            StandardUser standardUser = (StandardUser) user;
-            Wallet wallet = new Wallet(standardUser, Money.zero());
-            standardUser.setWallet(wallet);
-            walletRepository.save(wallet);
-        }
+        Wallet wallet=new Wallet(standardUser,Money.zero());
+        standardUser.setWallet(wallet);
+        walletRepository.save(wallet);
 
-        return userRepository.save(user);
+
+
+        return userRepository.save(standardUser);
     }
 
     public User getUserById(Long id) throws ExchangeException {

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * PURE OOP: Concrete implementation of a percentage-based fee.
+ * Concrete implementation of a percentage-based fee.
  * Demonstrates Inclusion Polymorphism and Robust Validation.
  */
 public final class StandardPercentagePolicy implements CommissionPolicy {

@@ -1,7 +1,6 @@
 package com.ermiyas.exchange.application.service;
 
 import com.ermiyas.exchange.domain.model.*;
-import com.ermiyas.exchange.domain.model.user.StandardUser;
 import com.ermiyas.exchange.domain.model.user.User;
 import com.ermiyas.exchange.domain.vo.Money;
 import com.ermiyas.exchange.domain.vo.Odds;
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
 
 /**
- * PURE OOP: Offer Service (Maker Logic).
+ * Offer Service (Maker Logic).
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +32,8 @@ public class OfferService {
        Creates a new offer from a "Maker".
      * Validates market state and reserves the maker's stake to ensure payout capability.
      */
+
+
     @Transactional(rollbackFor = Exception.class)
     public Long createOffer(Long eventId, Long makerUserId, Outcome outcome, Odds odds, Money stake) 
             throws ExchangeException {
@@ -46,12 +47,13 @@ public class OfferService {
         }
 
         // 2. Identify and Validate Maker
-        User user = userRepository.findById(makerUserId)
+        User maker = userRepository.findById(makerUserId)
                 .orElseThrow(() -> new IllegalBetException("Offer Error: User not found."));
 
-        if (!(user instanceof StandardUser maker)) {
-            throw new IllegalBetException("Security Violation: Only standard users can provide liquidity.");
-        }
+        Wallet makerWallet=maker.getWallet();
+        makerWallet.reserve(stake);
+
+
 
         // 3.  Reserve the stake in the maker's wallet
         // This moves money from 'available' to 'reserved'
@@ -73,16 +75,18 @@ public class OfferService {
         return offerRepository.save(offer).getId();
     }
 
+    
     /**
      * Allows a Maker to withdraw their unmatched funds.
      * Returns the remaining stake from the 'reserved' pool back to 'available'.
      */
+
     @Transactional(rollbackFor = Exception.class)
     public void cancelOffer(Long offerId, Long userId) throws ExchangeException {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new IllegalBetException("Cancel Error: Offer not found."));
 
-        // Security check: Only the owner can cancel
+        // Only the owner can cancel
         if (!Objects.equals(offer.getMaker().getId(), userId)) {
             throw new IllegalBetException("Security Violation: Unauthorized attempt to cancel someone else's offer.");
         }
@@ -92,10 +96,13 @@ public class OfferService {
         offer.cancel();
 
         // Unreserve the funds in the wallet
-        if (offer.getMaker() instanceof StandardUser maker) {
-            maker.getWallet().unreserve(stakeToReturn);
-            walletRepository.save(maker.getWallet());
-        }
+        
+        User maker=offer.getMaker();
+        Wallet makerWallet=maker.getWallet();
+
+        makerWallet.unreserve(stakeToReturn);
+        walletRepository.save(makerWallet);
+
 
         offerRepository.save(offer);
     }

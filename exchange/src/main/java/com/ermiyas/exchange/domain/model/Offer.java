@@ -61,7 +61,7 @@ public class Offer {
     private List<Bet> bets = new ArrayList<>();
 
     /**
-     * Refactored- Orchestrates the partial or full matching of an offer.
+     * Orchestrates the partial or full matching of an offer.
      * Calculates the Taker's liability based on the portion of the Maker's stake being matched.
      */
     public Bet fill(Money makerStakeToMatch, User taker, String reference) throws ExchangeException {
